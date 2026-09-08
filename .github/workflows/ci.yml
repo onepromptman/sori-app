@@ -1,0 +1,36 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: windows-latest
+    env:
+      PYTHONUTF8: "1"
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.14"
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -r requirements-app.txt pytest==9.0.3 ruff==0.9.6
+      - name: Lint
+        run: python -m ruff check .
+      # The steps that touch app state run against a runner temp dir, never a
+      # user profile. (`runner` is only usable in step-level env.)
+      - name: Test
+        env:
+          SORI_HOME: ${{ runner.temp }}\sori-home
+        run: python -m pytest -q
+      - name: Selftest
+        env:
+          SORI_HOME: ${{ runner.temp }}\sori-home
+        run: python app.py --selftest

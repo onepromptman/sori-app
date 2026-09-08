@@ -1,0 +1,18 @@
+{
+  "name": "sori",
+  "version": "3.2.0",
+  "description": "Sori from Claude Code or Cowork: /sori:transcribe (one episode or video, free, local), /sori:shows (subscriptions and settings), /sori:sweep (every Auto show, headless), /sori:train (transcript to BH-SEOUL deck + study guide; free by default, the API route is optional and paid).",
+  "author": {
+    "name": "Bryan Hong"
+  },
+  "repository": "https://github.com/onepromptman/sori",
+  "license": "MIT",
+  "keywords": [
+    "podcast",
+    "transcript",
+    "whisper",
+    "youtube",
+    "training",
+    "pptx"
+  ]
+}

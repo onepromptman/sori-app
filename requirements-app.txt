@@ -1,0 +1,23 @@
+# Sori (the desktop app) — everything in requirements.txt, plus:
+-r requirements.txt
+
+# window + JS bridge (uses the Edge WebView2 runtime already on Windows 10/11)
+pywebview
+
+# training generation (training.py) — the one part of the app that is NOT
+# free/local; needs a Claude API key entered in Settings. See app.py's
+# module docstring.
+anthropic
+
+# deck rendering. python-pptx is what every theme draws with and is always
+# needed. numpy and matplotlib are imported ONLY by the optional private deck
+# engine, never by the default theme -- if you do not have engine/, you can
+# skip those two lines. They are still listed here because they are pinned
+# through pyproject and the lock file; splitting them into their own group is
+# open work.
+python-pptx
+numpy
+matplotlib
+
+# only needed to build the standalone EXE, not to run the app from source
+pyinstaller

@@ -1,0 +1,50 @@
+# Sori is a set of scripts, not an installable package: this file is the one
+# place the pins live (Bryan's stack default: exact pins, full closure in
+# requirements.lock). The requirements*.txt files stay as thin install lists
+# for the README's `pip install -r` routes.
+
+[project]
+name = "sori"
+version = "3.2.0"
+description = "Podcasts and YouTube into transcripts (free, local) and BH-SEOUL training decks (with a Claude key)."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+dependencies = [
+    "yt-dlp==2026.7.4",
+    "faster-whisper==1.2.1",
+]
+
+[project.optional-dependencies]
+# the desktop app + training + deck rendering
+app = [
+    "pywebview==6.2.1",
+    "anthropic==0.89.0",
+    "python-pptx==1.0.2",
+    "numpy==2.4.4",
+    "matplotlib==3.11.0",
+]
+# cloud routine: captions + training, no Whisper (requirements-captions.txt)
+captions = [
+    "yt-dlp==2026.7.4",
+    "anthropic==0.89.0",
+    "python-pptx==1.0.2",
+    "numpy==2.4.4",
+    "matplotlib==3.11.0",
+]
+# only to build the standalone exe (package.py)
+build = [
+    "pyinstaller==6.21.0",
+]
+dev = [
+    "pytest==9.0.3",
+    "ruff==0.9.6",
+]
+
+[tool.ruff]
+line-length = 110
+# engine/deckgen.py is vendored verbatim (never edited here) and does not
+# lint clean; everything else in the repo does.
+extend-exclude = ["engine/deckgen.py"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

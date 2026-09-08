@@ -1,0 +1,12 @@
+# Sori, captions-only profile (cloud routine / any machine without Whisper).
+#
+# Enough to run `py app.py --sweep` against YouTube shows (captions via
+# yt-dlp) and, with ANTHROPIC_API_KEY, `train.py` for shows marked auto-train.
+# Deliberately NOT included: faster-whisper (no local audio transcription, so
+# RSS/audio shows cannot be processed here; cloud/guard.py refuses them) and
+# pywebview (no window). See docs/AUTOMATE.md and cloud/ROUTINE.md.
+yt-dlp
+anthropic
+python-pptx
+numpy
+matplotlib

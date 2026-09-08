@@ -1,0 +1,16 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.mp3
+*.wav
+*.vtt
+transcript*.txt
+.DS_Store
+
+# PyInstaller build output (the .spec IS committed — it's the build recipe)
+build/
+dist/
+
+# release artifacts built by Sori.spec (uploaded to GitHub Releases, not tracked)
+*.zip

@@ -1,0 +1,46 @@
+Sori - podcast & YouTube transcripts, free and local
+====================================================
+
+START HERE
+  Double-click  Sori.exe  (in this folder).
+
+  Windows shows a blue "Windows protected your PC" box the first
+  time. That is SmartScreen, which appears for any app that hasn't
+  been through a paid code-signing process - it is not a virus
+  warning. Click "More info", then "Run anyway". Windows remembers.
+
+IMPORTANT
+  Keep this whole folder together. Sori.exe needs the "_internal"
+  folder beside it. To put it on your Desktop or Start menu,
+  right-click Sori.exe -> "Create shortcut" and move the SHORTCUT.
+  Moving the exe out on its own makes it fail to start.
+
+WHAT IT DOES
+  Add a podcast RSS feed, a YouTube channel (@name), or a playlist,
+  and Sori turns new episodes into text. YouTube episodes use the
+  video's captions (seconds). Podcast audio is transcribed on your
+  own CPU. No account, no API key, no per-minute cost.
+
+  The first audio transcription downloads the Whisper model
+  (~150MB, once per machine) - that is the "fetching model" step.
+
+OPTIONAL: daily automatic transcripts
+  Double-click  setup-auto-sweep.bat  (in this folder) to register a
+  Windows task that checks your shows every morning at 9:03am.
+  To remove it later, run in a Command Prompt:
+      schtasks /delete /tn "Sori Daily Sweep" /f
+
+OPTIONAL: turn a transcript into a training deck
+  This is the one feature that is NOT free - it calls the Claude API
+  with your own key and costs money per run. Add a key under
+  Settings -> Training generation. Leave it blank and everything
+  else works exactly the same.
+
+YOUR FILES
+  Transcripts, settings, and generated decks live in:
+      %USERPROFILE%\Sori\
+  so they survive replacing or moving the app.
+
+Full docs + how to customize it:
+  https://github.com/onepromptman/sori
+MIT licensed.

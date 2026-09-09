@@ -14,7 +14,7 @@ description: >
 
 `SORI` below is the folder that holds `transcribe.py`: `${CLAUDE_PLUGIN_ROOT}`
 when installed as a plugin, otherwise the current checkout of
-https://github.com/onepromptman/sori. On Windows, `python` may be `py`.
+https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
 
 ## One-time setup (check before the first command)
 

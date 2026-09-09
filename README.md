@@ -32,8 +32,8 @@ do too, from the same `shows.json`.
 
 | Route | For | Steps |
 |---|---|---|
-| **Windows app** | most people | download `Sori-win64.zip` from the [latest release](https://github.com/onepromptman/sori/releases/latest), extract, double-click `Sori.exe` |
-| **Claude Code / Cowork plugin** | "transcribe this for me" in plain language | `/plugin marketplace add onepromptman/sori` then `/plugin install sori@sori`, then `/sori:transcribe`, `/sori:shows`, `/sori:sweep`, `/sori:train` (paid) |
+| **Windows app** | most people | download `Sori-win64.zip` from the [latest release](https://github.com/onepromptman/sori-app/releases/latest), extract, double-click `Sori.exe` |
+| **Claude Code / Cowork plugin** | "transcribe this for me" in plain language | `/plugin marketplace add onepromptman/sori-app` then `/plugin install sori@sori`, then `/sori:transcribe`, `/sori:shows`, `/sori:sweep`, `/sori:train` (paid) |
 | **From source** | any OS with Python 3.11+ | `pip install -r requirements-app.txt` then `python app.py` |
 | **Command line** | one transcript now, or scripting | `python transcribe.py youtube "<url>" --out ep.txt`; `shows.py` and `settings.py` manage subscriptions and settings, see [docs/CLI.md](docs/CLI.md) |
 

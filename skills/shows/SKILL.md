@@ -18,7 +18,7 @@ description: >
 
 `SORI` below is the folder that holds `shows.py`: `${CLAUDE_PLUGIN_ROOT}`
 when installed as a plugin, otherwise the current checkout of
-https://github.com/onepromptman/sori. On Windows, `python` may be `py`.
+https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
 
 Both scripts drive the same engine as the desktop app and read and write
 the same `shows.json` under `%USERPROFILE%\Sori` (`SORI_HOME` overrides),

@@ -1,0 +1,7 @@
+# The release zip ships Windows scripts and a Windows text file. cmd.exe is
+# the consumer, and an LF-only .bat can break `if (` / `for` blocks. Today
+# they read as CRLF only because Git for Windows defaults core.autocrlf=true
+# -- a clone that sets it otherwise, or a `git archive` export, gets LF.
+# Pin it instead of relying on the cloner's config.
+*.bat text eol=crlf
+"READ ME FIRST.txt" text eol=crlf

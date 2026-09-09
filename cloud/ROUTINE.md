@@ -1,5 +1,10 @@
 # The Sori cloud routine (captions-only)
 
+> **Maintainer's own setup.** This page is the operator runbook, not a user
+> guide. The repos it names (`onepromptman/sori`, `onepromptman/sori-output`)
+> are private and will 404 for you. It is published because the shape is
+> worth copying: point the two repo names at your own and the rest holds.
+
 A Claude Code scheduled cloud agent (`/schedule`) that runs
 `cloud/sweep_cloud.sh` once a day: checks the YouTube channels listed in the
 output repo's `state/shows.json`, transcribes new videos from captions, and

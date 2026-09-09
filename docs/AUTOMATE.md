@@ -38,7 +38,7 @@ and awake at 09:03; a missed run is not caught up.
 Prerequisites, once:
 
 1. The Sori plugin is installed in Claude Code / Cowork
-   (`/plugin marketplace add onepromptman/sori`, `/plugin install sori@sori`)
+   (`/plugin marketplace add onepromptman/sori-app`, `/plugin install sori@sori`)
    and `/sori:sweep` shows up in `/help`.
 2. Python deps: `py -m pip install -r requirements-app.txt` in the checkout
    the plugin points at (Whisper included; the Cowork sweep is full-strength).

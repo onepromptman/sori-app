@@ -12,7 +12,7 @@
       "author": {
         "name": "Bryan Hong"
       },
-      "repository": "https://github.com/onepromptman/sori",
+      "repository": "https://github.com/onepromptman/sori-app",
       "license": "MIT",
       "keywords": [
         "podcast",
@@ -22,7 +22,7 @@
         "training",
         "pptx"
       ],
-      "version": "3.2.0"
+      "version": "3.2.1"
     }
   ]
 }

@@ -8,7 +8,7 @@
     {
       "name": "sori",
       "source": "./",
-      "description": "Sori on any OS from Claude Code, Claude Desktop or Cowork, no app to install: /sori:setup (one-time environment, doctor, repair), /sori:transcribe (one episode or video, free, local), /sori:shows (subscriptions and settings), /sori:sweep (every Auto show, headless), /sori:train (transcript to deck + study guide; free by default, the API route is optional and paid).",
+      "description": "Sori on any OS from Claude Code, Claude Desktop or Cowork, no app to install. Transcripts: /sori:setup, /sori:transcribe, /sori:shows, /sori:sweep. Training pipeline: /sori:curate (triage, L&D brief, critic; maker != checker) and /sori:design (brief to deck through offline pptx, Claude Design, d_sign HTML, ChatSlide or Figma); /sori:train is the one-shot deck. Free by default; the API route is optional and paid.",
       "author": {
         "name": "Bryan Hong"
       },
@@ -23,7 +23,7 @@
         "pptx",
         "macos"
       ],
-      "version": "3.3.0"
+      "version": "3.4.0"
     }
   ]
 }

@@ -117,6 +117,21 @@ and survives replacing the app: `Transcripts/<Show>/`, `Trainings/<Show>/`,
 `shows.json`, `credentials.json`, `sweep.log`, and on the Claude door its own
 Python environment in `.venv/`.
 
+## From a transcript to a training, on a schedule
+
+Monitoring is `shows add <url> --auto` plus the daily sweep. From 3.4 the
+plugin also carries the rest of the way: `/sori:curate` triages each new
+transcript against your `~/Sori/curriculum.md` (a curator agent), writes
+the L&D brief for the ones worth teaching (an instructional-design agent),
+has it reviewed by a critic that is never the author, and records every
+stage in `~/Sori/ledger.jsonl`. `/sori:design` then turns a passed brief
+into a deck through the backend you pick once: the offline `.pptx`
+renderer (default, needs nothing), a Claude Design Slides artifact with your
+design system attached, the d_sign HTML masters, or a hand-off for ChatSlide
+or Figma Slides. No API key anywhere in that chain. How it fits together:
+[docs/PIPELINE.md](docs/PIPELINE.md); which design system is which:
+[docs/DESIGN-SYSTEMS.md](docs/DESIGN-SYSTEMS.md).
+
 ## Every morning, automatically
 
 The simplest route on Windows: double-click **`setup-auto-sweep.bat`** in

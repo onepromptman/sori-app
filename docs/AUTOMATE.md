@@ -56,8 +56,14 @@ Prerequisites, once:
 Create a recurring Cowork task, daily, 09:03, with this prompt verbatim:
 
 ```
-Run the Sori sweep with /sori:sweep, then tell me which transcripts landed and which shows had nothing new; if a show failed, say why.
+Run the Sori sweep with /sori:sweep, then run /sori:curate on whatever landed. Tell me which transcripts landed, which the curator marked train / park / skip and why, and which briefs passed the critic and are ready for /sori:design; if a show or a stage failed, say why.
 ```
+
+To also build the decks in the same run (your own viewing, your Claude
+Design, private), set the backend once with `python3 sori.py design-config
+design_backend claude-design` plus `design_system_url`, and append: "then
+run /sori:design on every brief that passed." Leave that line out to keep
+deck-building a step you trigger.
 
 What lands where: `~/Sori/Transcripts/<Show>/` and `Trainings/<Show>/`, so
 the desktop app's Library (on Windows) shows them the next time it opens.

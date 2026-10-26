@@ -36,6 +36,22 @@ pip install -r requirements-claude.txt # transcription + decks, no window (what 
 pip install -r requirements-app.txt    # + training via the API and the app window
 ```
 
+## The pipeline verbs (pipeline/cli.py, via sori.py)
+
+| Want | Command |
+|---|---|
+| Per-episode state table (or JSON) | `python3 sori.py ledger [--days N] [--json]` |
+| Record a stage | `python3 sori.py ledger add <episode_id> <stage> <by> [--show S] [--title T] [--artifact P] [--note N]` |
+| What awaits triage / critique, as JSON | `python3 sori.py curate --list [--days N]` |
+| Write `~/Sori/curriculum.md` from the template | `python3 sori.py curate --init [--force]` |
+| The brief skeleton | `python3 sori.py brief-template "<title>" [--show S --date D --source U]` |
+| The sourcing gate | `python3 sori.py brief-check <brief.md> <transcript.txt>` (exit 1 with findings) |
+| Hand a brief to a design backend (offline also renders when `outline.json` exists) | `python3 sori.py design "<episode folder>" [--backend offline\|claude-design\|dsign-html\|chatslide\|figma] [--episode-id ID --show S]` |
+| Pipeline settings (`~/Sori/pipeline.json`) | `python3 sori.py design-config [design_backend\|design_system_url\|dsign_root\|dsign_theme <value>]` |
+
+Stages: discovered, transcribed, triaged, briefed, critiqued, outlined,
+rendered, designed, reviewed, skipped, failed. See `docs/PIPELINE.md`.
+
 ## transcribe.py
 
 | Want | Command |

@@ -605,8 +605,19 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
     out.with_suffix(".json").write_text(
         json.dumps(sidecar, ensure_ascii=False, indent=None), encoding="utf-8",
     )
+    _ledger("transcribed", show, episode, by="sweep" if on_progress is None else "window", artifact=out)
     report("done", 1.0)
     return out
+
+
+def _ledger(stage: str, show: dict, episode: dict, by: str, artifact=None, note: str = "") -> None:
+    """Append a pipeline ledger row; never lets a bookkeeping failure fail a job."""
+    try:
+        from pipeline import ledger
+        ledger.record(show.get("name", ""), episode.get("id", ""), stage, by,
+                      title=episode.get("title", ""), artifact=artifact, note=note)
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -1886,6 +1897,7 @@ def sweep() -> int:
     for ep in result["episodes"]:
         flag = "auto" if ep["show_id"] in auto_ids else "manual"
         say(f"  - [{flag}] {ep['show_name']}: {ep['date']} {ep['title']}")
+        _ledger("discovered", {"name": ep["show_name"]}, ep, by="sweep", note=flag)
 
     if skipped:
         say(f"{skipped} episode(s) left for manual review (show not set to auto).")

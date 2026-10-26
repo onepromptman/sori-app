@@ -92,6 +92,18 @@ yt-dlp alone, because YouTube's page changes are the most common breakage.
 included. Tests, CI and staging runs always set it; the skills say never
 to point a test at the real folder.
 
+## The pipeline (3.4)
+
+`~/Sori/ledger.jsonl` holds show names, titles, stages and artifact paths;
+never transcript text, never a key. `~/Sori/pipeline.json` holds a backend
+name, a design-system URL and a checkout path. The agents run in your
+Claude session on files in `~/Sori`; the only external writes are the ones
+you configure: a Slides artifact in your own Claude Design (private until
+you share it), a Figma file through your connector, or a document you
+upload to ChatSlide yourself. The offline backend writes nothing outside
+the episode folder. The sourcing gate (`pipeline/brief.py`) is the
+anti-fabrication floor: a quote not in the transcript stops the deck.
+
 ## What each surface can and cannot reach
 
 | Surface | Runs where | Network | Notes |

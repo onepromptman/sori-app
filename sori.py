@@ -12,6 +12,8 @@ sori.py — the one command behind the Claude-native Sori, on any OS.
     python3 sori.py sweep                -> app.py --sweep
     python3 sori.py selftest             -> app.py --selftest
     python3 sori.py app                  -> app.py (the window; Windows only in practice)
+    python3 sori.py ledger|curate|brief-check|brief-template|design|design-config
+                                         -> pipeline/cli.py (the training pipeline, see docs/PIPELINE.md)
 
 Why this file exists. The Windows exe bundles its own Python. Every other
 door (the Claude Code / Cowork plugin on a Mac or Linux box, a plain shell)
@@ -73,6 +75,13 @@ VERBS = {
     "sweep": ["app.py", "--sweep"],
     "selftest": ["app.py", "--selftest"],
     "app": ["app.py"],
+    # the training pipeline after the transcript (pipeline/cli.py)
+    "ledger": ["pipeline/cli.py", "ledger"],
+    "curate": ["pipeline/cli.py", "curate"],
+    "brief-check": ["pipeline/cli.py", "brief-check"],
+    "brief-template": ["pipeline/cli.py", "brief-template"],
+    "design": ["pipeline/cli.py", "design"],
+    "design-config": ["pipeline/cli.py", "design-config"],
 }
 
 

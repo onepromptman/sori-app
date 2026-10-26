@@ -5,7 +5,7 @@
 
 [project]
 name = "sori"
-version = "3.3.0"
+version = "3.4.0"
 description = "Podcasts and YouTube into transcripts (free, local) and BH-SEOUL training decks (with a Claude key)."
 requires-python = ">=3.11"
 license = { text = "MIT" }

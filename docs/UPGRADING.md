@@ -63,3 +63,20 @@ nothing to change.
 
 **A store written by the exe (`deck_theme: baek`) now renders on a checkout
 without `engine/`** by falling back to `studio` instead of failing.
+
+## From 3.3 to 3.4
+
+**The pipeline after the transcript.** `/sori:curate` (triage, brief,
+critique) and `/sori:design` (brief to deck through a backend) join the
+plugin, with four agents under `agents/`. Nothing changes for transcripts
+or for the exe. New files in `~/Sori`: `curriculum.md` (yours to write;
+`sori.py curate --init` gives a template), `ledger.jsonl`, `pipeline.json`,
+and one folder per trained episode under `Trainings/<Show>/`.
+
+**`/sori:train` is unchanged** and remains the one-shot route. Use it when
+you want a deck now from one transcript; use curate + design when you
+want the brief, the critic and a design backend.
+
+**The sweep writes ledger rows** (`discovered`, `transcribed`) and
+`train.py` writes `rendered`. All fail-open; a ledger problem never fails
+a job.

@@ -154,6 +154,13 @@ def main(argv: list[str] | None = None) -> int:
     md_path.write_text(result.study_guide_md, encoding="utf-8")
     print(f"deck : {pptx_path}")
     print(f"guide: {md_path}")
+    try:   # pipeline bookkeeping; never fails a render
+        from pipeline import ledger
+        ledger.record(meta.get("show", ""), f"train:{src.stem}", "rendered",
+                      "train.py --outline" if outline_src is not None else "train.py api",
+                      title=meta["title"], artifact=pptx_path)
+    except Exception:
+        pass
     return 0
 
 

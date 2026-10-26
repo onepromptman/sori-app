@@ -57,6 +57,8 @@ hundred MB of downloads. On an Apple Silicon Mac it also installs
 | "Run the sweep" / "what's new on my shows" | `/sori:sweep` transcribes every new episode of your Auto shows and reports |
 | "Make a training deck from that transcript" | `/sori:train`: Claude writes the outline from the transcript, `train.py` renders a `.pptx` and a `.md` study guide. Free. |
 | "Set my deck theme / model / language" | `/sori:shows` → `settings ...` |
+| "What's worth a training from this week?" / "write the briefs" | `/sori:curate`: triage against your `~/Sori/curriculum.md`, brief, critique, ledger |
+| "Design the deck in Claude Design" / "export for ChatSlide" | `/sori:design`: brief → deck through the backend you set once (`design-config`) |
 | "Something's broken" / "YouTube stopped working" | `/sori:setup` → `doctor`, `update`, the repair table |
 
 Everything lands in `~/Sori/`:

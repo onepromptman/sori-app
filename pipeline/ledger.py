@@ -55,7 +55,9 @@ def ledger_path() -> Path:
 
 def _safe(text: str, limit: int = 90) -> str:
     """Same shape as app._safe_name: a folder name that works on every OS."""
-    cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]+', " ", text or "")
+    # Also strip `$` and backticks: these names end up inside shell snippets
+    # in hand-off READMEs, and a feed title is untrusted input.
+    cleaned = re.sub(r'[<>:"/\\|?*$`\x00-\x1f]+', " ", text or "")
     cleaned = re.sub(r"\s+", " ", cleaned).strip(" .")
     return cleaned[:limit].rstrip(". ") or "untitled"
 

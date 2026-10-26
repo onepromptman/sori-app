@@ -228,3 +228,19 @@ def test_launcher_routes_pipeline_verbs():
         assert sori.VERBS[verb][0] == "pipeline/cli.py"
         assert sori.VERBS[verb][1] == verb
         assert (sori.ROOT / sori.VERBS[verb][0]).is_file()
+
+
+def test_folder_names_cannot_smuggle_shell_syntax(home):
+    d = ledger.episode_dir("Show", {"date": "2026-10-01", "title": "Ep $(rm -rf ~) `id` x"})
+    assert "$" not in d.name and "`" not in d.name
+
+
+def test_offline_readme_quotes_the_path(home):
+    ep = ledger.episode_dir("Show", {"date": "2026-10-01", "title": "it's a 'quoted' title"})
+    (ep / "brief.md").write_text(GOOD_BRIEF, encoding="utf-8")
+    tdir = home / "Transcripts" / "Show"
+    tdir.mkdir(parents=True)
+    (tdir / (ep.name + ".txt")).write_text(TRANSCRIPT, encoding="utf-8")
+    readme = (design.handoff(ep, "offline") / "README.md").read_text()
+    import shlex
+    assert shlex.quote(str(ep)) in readme

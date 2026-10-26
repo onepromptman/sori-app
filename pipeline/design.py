@@ -24,6 +24,7 @@ bridge validates its own keys, and this is CLI-only for now):
 from __future__ import annotations
 
 import json
+import shlex
 import shutil
 from pathlib import Path
 
@@ -176,8 +177,8 @@ def _readme(backend: str, b: briefmod.Brief, cfg: dict, ep_dir: Path) -> str:
             "1. Write `outline.json` next to the brief, following `python3 sori.py train --brief` "
             "(same rules, Sori's 12 slide kinds; map `exercise` to `process` or `scorecard`, "
             "`cover`/`closing` are synthesized).\n"
-            "2. Render: `python3 sori.py train \"<transcript.txt>\" --outline outline.json --out \"" +
-            str(ep_dir) + "\"`.\n"
+            "2. Render: `python3 sori.py design " + shlex.quote(str(ep_dir)) + "` (it calls train.py "
+            "in-process with the transcript and outline.json; no path goes through a shell).\n"
             "3. Record: `python3 sori.py ledger add <episode_id> rendered deck-designer --artifact <deck.pptx>`.\n")
     if backend == "claude-design":
         ds = cfg.get("design_system_url") or "<not set: python3 sori.py design-system <url>>"

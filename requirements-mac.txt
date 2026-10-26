@@ -1,0 +1,7 @@
+# Sori on Apple Silicon: GPU-speed local transcription through Apple's MLX.
+#
+# Installed by `sori.py setup` on top of requirements-claude.txt when the
+# machine is a Mac with an arm64 CPU. transcribe.py picks this backend by
+# itself when the module imports (SORI_WHISPER_BACKEND=faster forces the
+# CPU path back). faster-whisper stays installed as the fallback.
+mlx-whisper

@@ -8,14 +8,14 @@ skill. Nothing here is new logic: every verb calls app.Api (the bridge the
 window uses) and reads and writes the same shows.json, so the exe shows what
 the CLI did and the CLI lists what the exe added. Honours SORI_HOME.
 
-    py shows.py list [--json]
-    py shows.py add <url> [--auto] [--auto-train] [--folder <folder>] [--json]
-    py shows.py remove <show>
-    py shows.py auto <show> on|off
-    py shows.py auto-train <show> on|off
-    py shows.py folder list | add <name> | rename <folder> <name>
+    python3 sori.py shows list [--json]
+    python3 sori.py shows add <url> [--auto] [--auto-train] [--folder <folder>] [--json]
+    python3 sori.py shows remove <show>
+    python3 sori.py shows auto <show> on|off
+    python3 sori.py shows auto-train <show> on|off
+    python3 sori.py shows folder list | add <name> | rename <folder> <name>
                        | remove <folder> | set <show> <folder>
-    py shows.py check [--json]        poll every feed, list new episodes (network)
+    python3 sori.py shows check [--json]        poll every feed, list new episodes (network)
 
 <show> and <folder> take an id or an exact name (case-insensitive); a name
 two shows share is an error, so use the id from `list`. `add` fetches the
@@ -99,7 +99,7 @@ def cmd_list(api: app.Api, args) -> int:
 
     def human(rows):
         if not rows:
-            print("no shows yet. add one: py shows.py add <feed url or YouTube channel>")
+            print("no shows yet. add one: python3 sori.py shows add <feed url or YouTube channel>")
             return
         _table([[s["id"], s["name"], s["type"], "on" if s["auto"] else "off",
                  "on" if s.get("auto_train") else "off",

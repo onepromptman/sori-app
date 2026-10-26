@@ -4,9 +4,36 @@ The desktop app runs these same scripts underneath, so both produce
 identical transcripts. Use the scripts when you want one transcript now,
 want to script Sori, or aren't on Windows.
 
+## sori.py (start here on any OS)
+
+```bash
+python3 sori.py doctor          # what is installed, what is missing, the fix
+python3 sori.py setup           # Sori's own Python environment in ~/Sori/.venv (once)
+python3 sori.py update          # upgrade yt-dlp: fixes most "YouTube stopped working"
+python3 sori.py transcribe ...  # = transcribe.py, inside that environment
+python3 sori.py shows ...       # = shows.py
+python3 sori.py settings ...    # = settings.py
+python3 sori.py train ...       # = train.py
+python3 sori.py sweep           # = app.py --sweep
+python3 sori.py selftest        # = app.py --selftest (profile-aware)
+python3 sori.py app             # = app.py (the window)
+```
+
+The launcher never installs into the system Python. It uses `uv` when it is
+on the PATH (and fetches a Python 3.12 by itself if yours is older), else the
+running interpreter's `venv` when that interpreter is 3.11 or newer. Profiles:
+`--profile claude` (default: yt-dlp, faster-whisper, python-pptx, plus
+mlx-whisper on Apple Silicon), `captions` (adds anthropic; no Whisper), `app`
+(the full window stack). `SORI_HOME=<dir>` moves the state and the
+environment together. Any pass-through verb runs `setup` first if the
+environment is missing. Everything below is what those verbs run.
+
+The old way still works if you manage your own environment:
+
 ```bash
 pip install -r requirements.txt        # transcription only (Python 3.11+)
-pip install -r requirements-app.txt    # + training decks and the app
+pip install -r requirements-claude.txt # transcription + decks, no window (what sori.py installs)
+pip install -r requirements-app.txt    # + training via the API and the app window
 ```
 
 ## transcribe.py
@@ -26,7 +53,9 @@ search for `"<show name>" rss feed`.
 **Models.** `--model` defaults to `base.en` (fast, English only). Drop the
 `.en` for other languages. `small`, `medium`, and `large-v3` are slower and
 more accurate; useful for noisy audio, accents, or technical vocabulary.
-`--device cuda` uses an NVIDIA GPU when one is present.
+`--device cuda` uses an NVIDIA GPU when one is present. On an Apple Silicon
+Mac with `mlx-whisper` installed (the launcher does it) the same model names
+run on the Apple GPU; `SORI_WHISPER_BACKEND=faster|mlx` overrides the choice.
 
 **Completeness.** Episodes often carry ad reads and segments that are cut
 from the show's YouTube upload. For the whole thing, transcribe the podcast
@@ -68,7 +97,7 @@ python app.py --selftest  # confirm every backend is installed
 ```
 
 `--sweep` is what the daily scheduled task runs. Subscriptions come from
-`%USERPROFILE%\Sori\shows.json` (the app and `shows.py` both write it); set
+`~/Sori/shows.json` (`%USERPROFILE%\Sori\shows.json` on Windows) (the app and `shows.py` both write it); set
 `SORI_HOME` to use another folder. Output goes to stdout and is appended to
 `sweep.log` in the same folder.
 

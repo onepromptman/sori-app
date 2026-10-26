@@ -1,7 +1,7 @@
 {
   "name": "sori",
-  "version": "3.2.1",
-  "description": "Sori from Claude Code or Cowork: /sori:transcribe (one episode or video, free, local), /sori:shows (subscriptions and settings), /sori:sweep (every Auto show, headless), /sori:train (transcript to BH-SEOUL deck + study guide; free by default, the API route is optional and paid).",
+  "version": "3.3.0",
+  "description": "Sori on any OS from Claude Code, Claude Desktop or Cowork, no app to install: /sori:setup (one-time environment, doctor, repair), /sori:transcribe (one episode or video, free, local), /sori:shows (subscriptions and settings), /sori:sweep (every Auto show, headless), /sori:train (transcript to deck + study guide; free by default, the API route is optional and paid).",
   "author": {
     "name": "Bryan Hong"
   },
@@ -13,6 +13,7 @@
     "whisper",
     "youtube",
     "training",
-    "pptx"
+    "pptx",
+    "macos"
   ]
 }

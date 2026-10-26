@@ -1,0 +1,14 @@
+# Sori, Claude-native profile: what `sori.py` installs by default on any OS.
+#
+# Enough for every plugin skill: transcripts from YouTube captions (yt-dlp)
+# and from audio on your own CPU (faster-whisper), and training decks rendered
+# with the default `studio` theme (python-pptx). Nothing here needs a window,
+# an API key, or a build tool.
+#
+# Deliberately NOT included: pywebview and pyinstaller (the Windows exe only),
+# anthropic (only the paid API route in train.py; the Claude session writes
+# the outline itself), numpy and matplotlib (only the private engine/ theme).
+# On Apple Silicon sori.py also installs requirements-mac.txt.
+yt-dlp
+faster-whisper
+python-pptx

@@ -11,7 +11,9 @@ No OpenAI/AssemblyAI key required. See README.md for setup and examples.
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
+import platform
 import re
 import sys
 import tempfile
@@ -316,6 +318,55 @@ def _download_audio(url_or_path: str, dest_dir: Path, on_progress=None, cancel=N
     return Path(url_or_path)
 
 
+# Two local Whisper backends, one contract. faster-whisper (CTranslate2) is
+# the default everywhere and the only one on Windows/Linux/Intel Macs. On
+# Apple Silicon, mlx-whisper runs the same models on the GPU through Apple's
+# MLX and is several times faster than int8 CPU decoding; sori.py installs it
+# there (requirements-mac.txt) and this module picks it up when it imports.
+# SORI_WHISPER_BACKEND=faster|mlx overrides the guess (tests, or a Mac where
+# MLX misbehaves). Both paths yield [{"start","end","text"}] + duration.
+_BACKENDS = ("faster", "mlx")
+
+# Sori's model names are faster-whisper's. mlx-community publishes the same
+# sizes under its own repo names; anything not listed follows the pattern.
+MLX_REPOS = {
+    "tiny.en": "mlx-community/whisper-tiny.en-mlx",
+    "base.en": "mlx-community/whisper-base.en-mlx",
+    "small.en": "mlx-community/whisper-small.en-mlx",
+    "tiny": "mlx-community/whisper-tiny-mlx",
+    "base": "mlx-community/whisper-base-mlx",
+    "small": "mlx-community/whisper-small-mlx",
+    "medium": "mlx-community/whisper-medium-mlx",
+    "large-v3": "mlx-community/whisper-large-v3-mlx",
+    "large-v3-turbo": "mlx-community/whisper-large-v3-turbo",
+}
+
+
+def mlx_repo(model_name: str) -> str:
+    if "/" in model_name:          # already a repo id or a local path
+        return model_name
+    return MLX_REPOS.get(model_name, f"mlx-community/whisper-{model_name}-mlx")
+
+
+def whisper_backend(device: str = "cpu") -> str:
+    """Which local backend a transcription will use.
+
+    `cuda` always means faster-whisper (MLX has no CUDA). Otherwise the env
+    override wins, then MLX on an Apple Silicon Mac that has mlx_whisper
+    installed, else faster-whisper. Importing nothing here keeps the check
+    cheap enough for the app's hourly poller.
+    """
+    if device == "cuda":
+        return "faster"
+    forced = (os.environ.get("SORI_WHISPER_BACKEND") or "").strip().lower()
+    if forced in _BACKENDS:
+        return forced
+    if (sys.platform == "darwin" and platform.machine() == "arm64"
+            and importlib.util.find_spec("mlx_whisper") is not None):
+        return "mlx"
+    return "faster"
+
+
 # Loading a WhisperModel costs seconds (weights off disk into RAM) and the app
 # transcribes many episodes per process, so keep one instance per
 # (model, device) alive. The Worker runs jobs serially, so a shared model is
@@ -361,6 +412,7 @@ def whisper_model_is_cached(model_name: str, device: str = "cpu") -> bool:
     patterns = [
         f"models--*whisper-{model_name}",
         f"models--{model_name.replace('/', '--')}",
+        f"models--{mlx_repo(model_name).replace('/', '--')}",
     ]
     for root in _hf_cache_roots():
         for pattern in patterns:
@@ -382,6 +434,14 @@ def load_whisper_model(model_name: str, device: str):
     with _MODEL_LOCK:
         model = _MODEL_CACHE.get(key)
         if model is None:
+            if whisper_backend(device) == "mlx":
+                from mlx_whisper.load_models import load_model
+
+                # Pulls the weights from the Hugging Face hub on first use (the
+                # visible "downloading model" step), then they are on disk.
+                model = load_model(mlx_repo(model_name))
+                _MODEL_CACHE[key] = model
+                return model
             from faster_whisper import WhisperModel
 
             compute_type = "int8" if device == "cpu" else "float16"
@@ -401,6 +461,9 @@ def _transcribe_whisper_segments(
     is passed through to faster-whisper only when set (None lets it auto-detect
     or defers to an English-only model).
     """
+    if whisper_backend(device) == "mlx":
+        return _transcribe_mlx_segments(audio_path, model_name, on_progress=on_progress,
+                                        cancel=cancel, language=language)
     model = load_whisper_model(model_name, device)
     # beam_size=5 + vad_filter is a solid default: accurate without being slow
     # on CPU, and voice-activity filtering skips music/silence beds cleanly.
@@ -418,6 +481,39 @@ def _transcribe_whisper_segments(
     return out, info.duration
 
 
+def _transcribe_mlx_segments(
+    audio_path: Path, model_name: str, on_progress=None, cancel=None, language=None
+) -> tuple[list[dict], float]:
+    """mlx-whisper twin of the faster-whisper path, same return shape.
+
+    mlx_whisper.transcribe() decodes the whole file and returns one dict, so
+    progress is reported per segment after the fact and cancel is honoured
+    between segments while the result is read out, not mid-decode. Duration
+    comes from the last segment's end (MLX does not report the file length).
+    """
+    import mlx_whisper
+
+    load_whisper_model(model_name, "cpu")   # make the download a visible step
+    kwargs = {"path_or_hf_repo": mlx_repo(model_name), "verbose": None}
+    if language is not None:
+        kwargs["language"] = language
+    result = mlx_whisper.transcribe(str(audio_path), **kwargs)
+    raw = result.get("segments") or []
+    duration = float(raw[-1].get("end") or 0.0) if raw else 0.0
+    out: list[dict] = []
+    for seg in raw:
+        if cancel is not None and cancel.is_set():
+            raise TranscriptionCancelled()
+        text = (seg.get("text") or "").strip()
+        if not text:
+            continue
+        out.append({"start": round(float(seg.get("start") or 0.0), 2),
+                    "end": round(float(seg.get("end") or 0.0), 2), "text": text})
+        if on_progress and duration:
+            on_progress(min(out[-1]["end"] / duration, 1.0))
+    return out, duration
+
+
 def _transcribe_whisper(
     audio_path: Path, model_name: str, device: str, on_progress=None
 ) -> tuple[str, float]:
@@ -430,7 +526,9 @@ def _whisper_or_exit(audio_path: Path, model_name: str, device: str) -> tuple[st
     try:
         return _transcribe_whisper(audio_path, model_name, device)
     except ImportError:
-        sys.exit("faster-whisper is required for this command: pip install faster-whisper")
+        sys.exit("a local Whisper backend is required for this command: "
+                 "pip install faster-whisper (or mlx-whisper on Apple Silicon), "
+                 "or run `python3 sori.py setup`")
 
 
 def cmd_audio(args: argparse.Namespace) -> None:

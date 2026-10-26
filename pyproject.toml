@@ -5,16 +5,25 @@
 
 [project]
 name = "sori"
-version = "3.2.1"
+version = "3.3.0"
 description = "Podcasts and YouTube into transcripts (free, local) and BH-SEOUL training decks (with a Claude key)."
 requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = [
-    "yt-dlp==2026.7.4",
+    "yt-dlp==2026.10.21",
     "faster-whisper==1.2.1",
 ]
 
 [project.optional-dependencies]
+# the Claude-native door on any OS (requirements-claude.txt, installed by
+# sori.py): captions, local Whisper, decks in the default theme. No window.
+claude = [
+    "python-pptx==1.0.2",
+]
+# added on Apple Silicon by sori.py (requirements-mac.txt): MLX Whisper
+mac = [
+    "mlx-whisper==0.4.3",
+]
 # the desktop app + training + deck rendering
 app = [
     "pywebview==6.2.1",
@@ -25,7 +34,7 @@ app = [
 ]
 # cloud routine: captions + training, no Whisper (requirements-captions.txt)
 captions = [
-    "yt-dlp==2026.7.4",
+    "yt-dlp==2026.10.21",
     "anthropic==0.89.0",
     "python-pptx==1.0.2",
     "numpy==2.4.4",

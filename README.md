@@ -4,8 +4,8 @@ Follow podcasts and YouTube channels, turn every new episode into text on
 your own machine, and, if you want, turn a transcript into a training deck
 and study guide.
 
-Transcription is free and local: no account, no API key, nothing leaves
-your computer except the feed and audio fetches. Training generation from
+Transcription is free and local on macOS, Linux and Windows: no account,
+no API key, nothing leaves your computer except the feed and audio fetches. Training generation from
 the app is the one paid step: it calls the Claude API with your own key, and
 you can ignore it entirely. From Claude Code or Cowork the session writes
 the deck outline itself and Sori only renders it, so that door needs no key.
@@ -25,23 +25,32 @@ flowchart LR
 
 ## Get it
 
-Sori is two products over one engine: the Windows app is first-class, and a
-Claude-native Sori (the plugin plus the Python CLIs, no window) ships
-alongside it, with one parity rule: anything the window can do, the CLI can
-do too, from the same `shows.json`.
+Sori is one engine behind two front doors. The **Claude-native Sori** (a
+plugin plus the Python scripts, no window) runs on macOS, Linux and
+Windows and is the route for everyone who is not on Windows or already
+uses Claude; the **Windows app** stays first-class for people who never
+open Claude. Both read and write the same `~/Sori` folder, and one parity
+rule holds: anything the window can do, the CLI can do too.
 
 | Route | For | Steps |
 |---|---|---|
-| **Windows app** | most people | download `Sori-win64.zip` from the [latest release](https://github.com/onepromptman/sori-app/releases/latest), extract, double-click `Sori.exe` |
-| **Claude Code / Cowork plugin** | "transcribe this for me" in plain language | `/plugin marketplace add onepromptman/sori-app` then `/plugin install sori@sori`, then `/sori:transcribe`, `/sori:shows`, `/sori:sweep`, `/sori:train` (paid) |
-| **From source** | any OS with Python 3.11+ | `pip install -r requirements-app.txt` then `python app.py` |
-| **Command line** | one transcript now, or scripting | `python transcribe.py youtube "<url>" --out ep.txt`; `shows.py` and `settings.py` manage subscriptions and settings, see [docs/CLI.md](docs/CLI.md) |
+| **Claude plugin** (Claude Desktop Code tab, Claude Code, or Cowork) | Mac, Linux, and anyone who uses Claude. No installer, no `.dmg`, nothing to sign | In Claude: **Customize > Plugins > Add marketplace** `onepromptman/sori-app`, add **sori**. Or in Claude Code: `/plugin marketplace add onepromptman/sori-app` then `/plugin install sori@sori`. Then `/sori:setup` once, and `/sori:transcribe`, `/sori:shows`, `/sori:sweep`, `/sori:train`. Full guide: [docs/CLAUDE-NATIVE.md](docs/CLAUDE-NATIVE.md) |
+| **Windows app** | Windows users who never open Claude | download `Sori-win64.zip` from the [latest release](https://github.com/onepromptman/sori-app/releases/latest), extract, double-click `Sori.exe` |
+| **Command line** | any OS, one transcript now, or scripting | `git clone`, then `python3 sori.py transcribe youtube "<url>" --out ep.txt`. `sori.py` creates Sori's own Python environment in `~/Sori/.venv` on first use; `shows`, `settings`, `sweep`, `train` are the other verbs, see [docs/CLI.md](docs/CLI.md) |
+| **From source, the window** | developers | `python3 sori.py --profile app setup` then `python3 sori.py app` |
 
 **CLI-only for now:** nothing. Every window feature has a CLI twin:
-`shows.py` mirrors the source list (add, remove, Auto, Auto-train,
-folders) and `settings.py` mirrors Settings, so the app shows whatever the
-CLI did and vice versa. Scheduling options (Windows task, Cowork, cloud
-routine) are compared in [docs/AUTOMATE.md](docs/AUTOMATE.md).
+`shows` mirrors the source list (add, remove, Auto, Auto-train, folders)
+and `settings` mirrors Settings, so the app shows whatever the CLI did and
+vice versa. Scheduling options (Windows task, Cowork, launchd/cron, cloud
+routine) are compared in [docs/AUTOMATE.md](docs/AUTOMATE.md). Why the
+plugin, and not a Mac app, a cloud service or a ChatGPT app, is written up
+in [docs/HOSTING.md](docs/HOSTING.md); what Sori does and does not touch is
+in [docs/SECURITY.md](docs/SECURITY.md).
+
+**On a Mac** transcription runs on the GPU: `sori.py` installs
+`mlx-whisper` on Apple Silicon and picks it automatically, so `large-v3` is
+affordable on a laptop. Everything else is identical.
 
 Two things on the first app launch. Extract the zip before running
 (right-click, **Extract All**); an exe run from inside the zip window fails
@@ -103,9 +112,10 @@ API call per deck; you pay Anthropic directly at their rates. `/sori:train`
 skips the call: the session writes the outline against the same rules and
 `train.py --outline` renders it with the same engine (see docs/CLI.md).
 
-Everything Sori makes lives in `%USERPROFILE%\Sori\` and survives replacing
-the app: `Transcripts\<Show>\`, `Trainings\<Show>\`, `shows.json`,
-`credentials.json`, `sweep.log`.
+Everything Sori makes lives in `~/Sori/` (`%USERPROFILE%\Sori\` on Windows)
+and survives replacing the app: `Transcripts/<Show>/`, `Trainings/<Show>/`,
+`shows.json`, `credentials.json`, `sweep.log`, and on the Claude door its own
+Python environment in `.venv/`.
 
 ## Every morning, automatically
 
@@ -119,8 +129,9 @@ Remove it with:
 schtasks /delete /tn "Sori Daily Sweep" /f
 ```
 
-Running the sweep from Cowork or a cloud routine instead, with the
-trade-offs, is in [docs/AUTOMATE.md](docs/AUTOMATE.md).
+On a Mac or Linux box: a Cowork schedule, or launchd/cron calling
+`python3 sori.py sweep`. All four ways, with their trade-offs, are in
+[docs/AUTOMATE.md](docs/AUTOMATE.md).
 
 Upgrading from an Earshot or Podcast Studio build? See
 [docs/UPGRADING.md](docs/UPGRADING.md).

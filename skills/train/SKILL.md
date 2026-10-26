@@ -1,24 +1,25 @@
 ---
 name: train
 description: >
-  Turn a Sori transcript (.txt) into a BH·SEOUL training deck (.pptx) plus a
-  study guide (.md). Default route is free: you (the session) write the deck
-  outline from the transcript against Sori's rules, and train.py renders it
-  locally, no API key. The optional API route makes one paid Claude call on
-  the user's own key. Use when the user says: make a training / deck /
-  slides / study guide from this transcript, train this episode, generate
-  training, /sori:train. Not for getting the transcript (/sori:transcribe or
-  /sori:sweep) or saving an API key (/sori:shows).
+  Turn a Sori transcript (.txt) into a training deck (.pptx) plus a study
+  guide (.md), any OS. Default route is free: you (the session) write the
+  deck outline from the transcript against Sori's rules, and train.py
+  renders it locally, no API key. The optional API route makes one paid
+  Claude call on the user's own key. Use when the user says: make a training
+  / deck / slides / study guide from this transcript, train this episode,
+  generate training, /sori:train. Not for getting the transcript
+  (/sori:transcribe or /sori:sweep), saving an API key (/sori:shows), or
+  installing (/sori:setup).
 ---
 
 # Sori: training deck from a transcript
 
-`SORI` below is the folder that holds `train.py`: `${CLAUDE_PLUGIN_ROOT}`
-when installed as a plugin, otherwise the current checkout of
-https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
-Setup, once: `cd "$SORI" && python -m pip install -r requirements-app.txt`
-(adds `python-pptx`, `numpy`, `matplotlib`; `anthropic` is only used by the
-paid route).
+`SORI` below is the folder that holds `sori.py`: `${CLAUDE_PLUGIN_ROOT}`
+when installed as a plugin, otherwise a checkout of
+https://github.com/onepromptman/sori-app. `python3` may be `python` or `py`
+on Windows. The first run on a new machine installs Sori's own environment
+(python-pptx is part of it); `anthropic` is NOT installed by default, only
+the paid route needs it.
 
 Two routes, one engine. Both end in the same validator and renderer, so the
 deck is the same deck whoever authored the outline. The exe uses the API
@@ -30,16 +31,15 @@ are already the model.
 1. Read the rules and the exact JSON shape:
 
    ```bash
-   python "$SORI/train.py" --brief
+   python3 "$SORI/sori.py" train --brief
    ```
 
-   The brief is Sori's system prompt (five house rules: every claim, quote
-   and number from the transcript; no forced hero_stat; concrete examples;
-   terse slides; the study guide is the fuller version) plus the
-   `submit_training` schema: `deck_title`, optional `deck_subtitle`,
-   `closing_heading`, `cta`, 6 to 20 `slides` of kinds `divider`, `content`,
-   `content_stat`, `two_column`, `process`, `agenda`, `quote`, `callout`,
-   and `study_guide_markdown`.
+   The brief is Sori's system prompt (house rules: every claim, quote and
+   number from the transcript; no forced hero_stat; concrete examples; terse
+   slides; the study guide is the fuller version; per-kind gates for the
+   visual kinds) plus the `submit_training` schema: `deck_title`, optional
+   `deck_subtitle`, `closing_heading`, `cta`, 6 to 20 `slides` of the listed
+   kinds, and `study_guide_markdown`.
 
 2. Read the whole transcript file. Do not write from memory of the show.
    Skip ad reads. If the transcript is thin (see the wpm check in
@@ -52,7 +52,7 @@ are already the model.
 4. Render:
 
    ```bash
-   python "$SORI/train.py" "<transcript.txt>" --outline outline.json [--out <folder>] [--theme baek|dark|dancheong]
+   python3 "$SORI/sori.py" train "<transcript.txt>" --outline outline.json [--out <folder>] [--theme studio]
    ```
 
    Exit 1 with `!! ...` on stderr means the outline failed validation (slide
@@ -68,13 +68,17 @@ transcript's size in input tokens (capped by `MAX_TRANSCRIPT_CHARS` in
 
 1. Confirm the user wants to spend it, once per run.
 2. Confirm a key is reachable: `ANTHROPIC_API_KEY` in the environment, else
-   the key saved by the Sori app or `settings.py api-key set`
-   (`%USERPROFILE%\Sori\credentials.json`; `SORI_HOME` overrides). No key:
-   stop and point to `/sori:shows` `api-key set`; never ask for a key in chat.
-3. Name the transcript you will send, so the wrong file never gets billed.
+   the key saved by the Sori app or `settings api-key set`
+   (`~/Sori/credentials.json`; `SORI_HOME` overrides). No key: stop and
+   point to `/sori:shows` `api-key set`; never ask for a key in chat.
+3. The `anthropic` package is not in the default profile. Install it into
+   Sori's environment, not the system Python:
+   `python3 "$SORI/sori.py" --profile captions setup` (adds anthropic; keeps
+   everything else), then rerun.
+4. Name the transcript you will send, so the wrong file never gets billed.
 
 ```bash
-python "$SORI/train.py" "<transcript.txt>" [--out <folder>] [--theme baek|dark|dancheong] [--model <claude model>]
+python3 "$SORI/sori.py" train "<transcript.txt>" [--out <folder>] [--theme studio] [--model <claude model>]
 ```
 
 There is no `--api-key` flag: a key on the command line would land in shell
@@ -85,15 +89,14 @@ found it exits 2 with `!! no Claude API key: ...` and nothing is spent.
 
 Transcripts written by `/sori:transcribe` or the sweep start with a
 three-line header (title, `show — date`, source); `train.py` reads it. For
-any other .txt pass `--title/--show/--date`. Themes: `baek` (light, the CLI
-default), `dark`, `dancheong`; `train.py` does not read the app's deck-theme
-setting, pass `--theme`.
+any other .txt pass `--title/--show/--date`. Themes: `studio` (default,
+unbranded, stock fonts, opens the same on any machine) everywhere; a private
+checkout with `engine/` adds `baek`, `dark`, `dancheong`. `train.py` does
+not read the app's deck-theme setting, pass `--theme`.
 
 Output: `<date> - <title>.pptx` and `<date> - <title>.md` next to the
 transcript, or in `--out`. Report both paths; if the user wants the
-takeaways, read the `.md` rather than summarizing from memory. On first
-render Sori installs the deck fonts (Gowun Batang, IBM Plex, SIL OFL) into
-the Windows user font folder so PowerPoint does not substitute.
+takeaways, read the `.md` rather than summarizing from memory.
 
 ## Never
 
@@ -101,6 +104,6 @@ the Windows user font folder so PowerPoint does not substitute.
   transcript, on either route.
 - Run the paid route silently, in a loop, or without a per-run yes.
 - Put an API key in chat, in a file, or anywhere but the environment or
-  `settings.py api-key set`. Never read or print `credentials.json`.
+  `settings api-key set`. Never read or print `credentials.json`.
 - Retry a failed paid call without telling the user the first one may have
   been billed.

@@ -68,17 +68,33 @@ SORI_OUTPUT_DIR=/path/to/sori-output bash cloud/sweep_cloud.sh             # pus
 non-YouTube show, 4 credentials file at risk of being committed; anything
 else is the sweep or git failing under `set -e`.
 
-## Open item before the paid run
+## The key in the cloud (shipped in 3.3)
 
-`app.sweep()` resolves the training key through `app.anthropic_api_key()`,
-which reads `credentials.json` only; there is no `ANTHROPIC_API_KEY`
-fallback on that path today (`train.py` has one, the sweep does not). So in
-the cloud the transcript half works now and the auto-train half needs a
-change in `app.py` before the first paid run. Any fallback must be gated to
-the cloud entrypoint (an explicit opt-in that only `sweep_cloud.sh` sets)
-rather than a bare `os.environ` read in `app.anthropic_api_key()`: that
-function also serves the desktop app's scheduled `--sweep` over Bryan's real
-shows, and a bare read would let a stray shell `ANTHROPIC_API_KEY` turn on
-paid auto-train without a key ever being entered in Settings. Which design
-lands is Bryan's call (spend).
-The dry-run procedure in `ROUTINE.md` does not depend on it.
+`app.anthropic_api_key()` reads `ANTHROPIC_API_KEY` from the environment
+only when `SORI_KEY_FROM_ENV=1` is also set. `sweep_cloud.sh` exports that
+opt-in when a key is present and nothing else does, so the desktop's
+scheduled sweep over Bryan's real shows still spends only on a key saved in
+Settings. The key never touches the output repo: no `credentials.json` is
+written in the cloud (and the script refuses to commit one, exit 4).
+
+## Network: what the cloud runner can reach
+
+Anthropic-hosted environments default to **Trusted** network access
+(package registries and GitHub). Probed from a cloud session on
+2026-10-26, `youtube.com`, `feeds.simplecast.com` and a podcast CDN all
+returned `403` from the egress proxy. The routine therefore needs an
+environment with **Custom** network access listing at least:
+
+```
+*.youtube.com
+*.googlevideo.com
+*.ytimg.com
+www.google.com
+```
+
+plus "Also include default list of common package managers" so
+`requirements-captions.txt` still installs. Even then YouTube answers many
+datacenter IPs with "Sign in to confirm you're not a bot", and yt-dlp's
+proof-of-origin workaround no longer reliably clears it. Treat the cloud
+sweep as best-effort: a bot-checked video fails cleanly, is retried on the
+next two runs, then parks for the desktop or the Claude door to pick up.

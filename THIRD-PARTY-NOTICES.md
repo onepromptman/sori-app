@@ -32,12 +32,16 @@ Full licence text: https://openfontlicense.org/open-font-license-official-text/
 
 Installed from PyPI at build time and bundled into the release archive by
 PyInstaller. Each keeps its own licence; these are the direct dependencies
-declared in `requirements.txt` and `requirements-app.txt`.
+declared in `requirements.txt`, `requirements-app.txt`, `requirements-claude.txt`
+and `requirements-mac.txt`. The Claude-native door (`sori.py`) installs them
+into `~/Sori/.venv` on the user's machine at first run rather than bundling
+them; `uv`, when present, is used as the installer and is not redistributed.
 
 | Package | Licence | Used for |
 |---|---|---|
 | `yt-dlp` | Unlicense | YouTube caption fetching |
 | `faster-whisper` | MIT | local speech-to-text |
+| `mlx-whisper` | MIT | local speech-to-text on Apple Silicon (installed by `sori.py` from `requirements-mac.txt`; not in the Windows archive) |
 | `ctranslate2` | MIT | Whisper inference runtime |
 | `av` (PyAV) | BSD-3-Clause | audio decoding |
 | `onnxruntime` | MIT | voice-activity filter |

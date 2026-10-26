@@ -35,11 +35,16 @@ def _snap(settings, capsys) -> dict:
 # -- show ------------------------------------------------------------------------
 
 def test_show_defaults(settings, sori_home, capsys):
+    # The store's stored default is the engine's "baek"; what `show` reports
+    # is the theme this checkout can actually render, so a checkout without
+    # engine/ (or without its numpy/matplotlib) reports "studio" instead.
+    import deck_render
+    default_theme = deck_render.DEFAULT_THEME
     code, out, err = _run(settings, capsys, ["show"])
     assert code == 0 and err == ""
     assert "model           base.en" in out
     assert "lang            en" in out
-    assert "deck_theme      baek" in out
+    assert f"deck_theme      {default_theme}" in out
     assert "api key         not set" in out
     assert str(sori_home / "Transcripts") in out
     assert "tokens.css" not in out  # deck_render's import warning stays out of CLI output
@@ -48,7 +53,7 @@ def test_show_defaults(settings, sori_home, capsys):
     assert snap == {
         "model": "base.en", "lang": "en",
         "transcripts_dir": str(sori_home / "Transcripts"),
-        "deck_theme": "baek", "api_key_set": False, "api_key_last4": None,
+        "deck_theme": default_theme, "api_key_set": False, "api_key_last4": None,
     }
 
 

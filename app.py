@@ -16,6 +16,8 @@ deck_render.py for that boundary.
 
 Two ways to run, plus two CLIs over the same store:
     py app.py            open the window (ui/index.html, pywebview)
+    python3 sori.py ...  any OS: the launcher that owns Sori's own venv and
+                         runs every script below (see sori.py)
     py app.py --sweep    headless: check every show, transcribe new episodes
                          for shows marked auto (and generate trainings for
                          shows marked Auto-train), print a summary, exit
@@ -24,7 +26,7 @@ Two ways to run, plus two CLIs over the same store:
     py settings.py ...   model, lang, transcripts-dir, deck-theme, api-key
                          (the key comes from ANTHROPIC_API_KEY, never argv)
 
-All state lives under %USERPROFILE%\\Sori (never inside the app folder, which
+All state lives under ~/Sori (%USERPROFILE%\\Sori on Windows; never inside the app folder, which
 may be read-only when installed from the packaged EXE). The folder was called
 PodcastStudio before the rename; state_dir() migrates it automatically:
     shows.json                     subscriptions + per-show seen markers
@@ -142,7 +144,21 @@ def save_credentials(data: dict) -> None:
 
 
 def anthropic_api_key() -> str | None:
-    return (load_credentials().get("anthropic_api_key") or "").strip() or None
+    """The key the window, the sweep and Auto-train spend on.
+
+    Saved key first (Settings, or `settings.py api-key set`). The environment
+    is consulted ONLY when SORI_KEY_FROM_ENV=1 is also set: a bare env read
+    here would let a stray shell ANTHROPIC_API_KEY turn on paid Auto-train in
+    the desktop's scheduled sweep without a key ever being entered. The one
+    caller that sets the opt-in is cloud/sweep_cloud.sh, where there is no
+    Settings pane and the key must never be written to disk.
+    """
+    saved = (load_credentials().get("anthropic_api_key") or "").strip()
+    if saved:
+        return saved
+    if os.environ.get("SORI_KEY_FROM_ENV") == "1":
+        return (os.environ.get("ANTHROPIC_API_KEY") or "").strip() or None
+    return None
 
 
 def transcripts_dir() -> Path:
@@ -658,9 +674,14 @@ def run_training(show: dict, episode: dict, transcript_path: Path, settings: dic
 
     check_cancel()
     report("rendering", None)
-    theme = settings.get("deck_theme", "baek")
     try:
         import deck_render
+        # The store's default theme is the private engine's "baek"; a checkout
+        # without engine/ only has "studio". Fall back instead of failing a
+        # render that already cost a paid call.
+        theme = settings.get("deck_theme") or deck_render.DEFAULT_THEME
+        if theme not in deck_render.THEMES:
+            theme = deck_render.DEFAULT_THEME
         deck_render.render_pptx(result.outline, theme, pptx_path)
     except tr.TrainingGenerationError:
         raise
@@ -1430,8 +1451,11 @@ class Api:
         import deck_render
         settings = load_store()["settings"]
         key = anthropic_api_key()
+        theme = settings.get("deck_theme", DEFAULT_SETTINGS["deck_theme"])
+        if theme not in deck_render.THEMES:      # store from the exe, checkout without engine/
+            theme = deck_render.DEFAULT_THEME
         return {
-            "deck_theme": settings.get("deck_theme", DEFAULT_SETTINGS["deck_theme"]),
+            "deck_theme": theme,
             "themes": deck_render.THEMES,
             "has_api_key": bool(key),
             "api_key_last4": key[-4:] if key else None,
@@ -1732,9 +1756,10 @@ class Api:
 def _open_in_explorer(target: Path) -> None:
     if hasattr(os, "startfile"):
         os.startfile(str(target))  # noqa: S606 - Windows shell open, no user input in argv
-    else:  # pragma: no cover - dev convenience on non-Windows
+    else:  # pragma: no cover - the window is Windows-first; this is for `python app.py` elsewhere
         import subprocess
-        subprocess.run(["xdg-open", str(target)], check=False)
+        opener = "open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.run([opener, str(target)], check=False)
 
 
 # ---------------------------------------------------------------------------
@@ -1928,6 +1953,15 @@ def selftest() -> int:
     lines.append(f"ui: {app_dir() / 'ui' / 'index.html'} "
                  f"({'found' if (app_dir() / 'ui' / 'index.html').exists() else 'MISSING'})")
 
+    # sori.py sets SORI_PROFILE to the dependency profile it installed. The
+    # `claude` profile has no window and no API client on purpose, so those
+    # two are reported as "skip" there instead of counted as failures; the
+    # exe (no profile set) still needs all of them.
+    profile = os.environ.get("SORI_PROFILE") or "app"
+    optional = {"webview", "anthropic"} if profile in ("claude", "captions") else set()
+    if profile == "captions":
+        optional |= {"faster_whisper", "ctranslate2", "av", "onnxruntime"}
+    lines.append(f"profile: {profile}")
     checks = [
         ("yt_dlp", "YouTube captions"),
         ("faster_whisper", "local transcription"),
@@ -1945,8 +1979,13 @@ def selftest() -> int:
             version = getattr(mod, "__version__", "?")
             lines.append(f"  ok    {module:<16} {version:<12} ({what})")
         except Exception as exc:
+            if module in optional:
+                lines.append(f"  skip  {module:<16} {'':<12} ({what}; not part of the {profile} profile)")
+                continue
             failures += 1
             lines.append(f"  FAIL  {module:<16} {'':<12} ({what}) — {exc}")
+    if tx.whisper_backend() == "mlx":
+        lines.append(f"  ok    mlx_whisper      {'':<12} (local transcription on Apple silicon; selected)")
 
     # Not third-party packages, so not in `checks` above: prove the app's own
     # new modules import cleanly in a frozen build too, and that the vendored

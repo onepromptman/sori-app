@@ -9,7 +9,8 @@ permissions:
   contents: read
 
 jobs:
-  test:
+  # The exe's home: the full app profile, every backend, the window stack.
+  windows:
     runs-on: windows-latest
     env:
       PYTHONUTF8: "1"
@@ -34,3 +35,45 @@ jobs:
         env:
           SORI_HOME: ${{ runner.temp }}\sori-home
         run: python app.py --selftest
+
+  # The Claude-native door: macOS and Linux through the launcher, exactly the
+  # way a plugin user gets it (sori.py creates ~/Sori/.venv, installs the
+  # claude profile, runs the scripts inside it). No window, no key, no spend.
+  launcher:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-latest, ubuntu-latest]
+    runs-on: ${{ matrix.os }}
+    env:
+      SORI_HOME: ${{ github.workspace }}/.ci-sori-home
+      # CI runners are x86/arm64 Linux and arm64 macOS; MLX wheels need macOS 13.5+
+      # on Apple Silicon and are heavy, so the launcher's Mac extra is skipped
+      # here and covered by the fake-module tests instead.
+      SORI_WHISPER_BACKEND: faster
+    steps:
+      - uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+      - uses: actions/setup-python@ece7cb06caefa5fff74198d8649806c4678c61a1 # v6
+        with:
+          python-version: "3.12"
+      - uses: astral-sh/setup-uv@94527f2e458b27549849d47d273a16bec83a01e9 # v7
+      - name: Launcher doctor (before)
+        run: python3 sori.py doctor || true
+      - name: Launcher setup (claude profile, no Mac extra)
+        run: |
+          # Install exactly what a Linux/Intel user gets; the Mac extra is an
+          # Apple-Silicon-only wheel set that the runner may not match.
+          sed -i.bak '/^mlx-whisper$/d' requirements-mac.txt
+          python3 sori.py setup
+      - name: Launcher doctor (after)
+        run: python3 sori.py doctor
+      - name: Lint and tests inside the launcher's environment
+        run: |
+          uv pip install --python "$SORI_HOME/.venv/bin/python" pytest==9.0.3 ruff==0.9.6
+          "$SORI_HOME/.venv/bin/python" -m ruff check .
+          "$SORI_HOME/.venv/bin/python" -m pytest -q
+      - name: The CLIs build Api() without a window
+        run: |
+          python3 sori.py shows list
+          python3 sori.py settings show
+          python3 sori.py train --brief > /dev/null

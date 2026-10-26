@@ -3,33 +3,35 @@ name: sweep
 description: >
   Run the Sori sweep: check every subscribed show, transcribe the new
   episodes of shows marked Auto, train the Auto-train ones, and report what
-  landed. Headless, exits when done. Use when the user says: run the sweep,
-  run Sori, do the daily run, transcribe everything new, catch up my shows,
-  what did the sweep do, read sweep.log, /sori:sweep. Not for one episode
-  (/sori:transcribe), changing subscriptions or settings (/sori:shows), or a
-  deck from a transcript you already have (/sori:train).
+  landed. Headless, any OS, exits when done. Use when the user says: run the
+  sweep, run Sori, do the daily run, transcribe everything new, catch up my
+  shows, what did the sweep do, read sweep.log, /sori:sweep. Not for one
+  episode (/sori:transcribe), changing subscriptions or settings
+  (/sori:shows), a deck from a transcript you already have (/sori:train), or
+  installing (/sori:setup).
 ---
 
 # Sori: the sweep
 
-`SORI` below is the folder that holds `app.py`: `${CLAUDE_PLUGIN_ROOT}`
-when installed as a plugin, otherwise the current checkout of
-https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
-Setup, once: `cd "$SORI" && python -m pip install -r requirements-app.txt`.
+`SORI` below is the folder that holds `sori.py`: `${CLAUDE_PLUGIN_ROOT}`
+when installed as a plugin, otherwise a checkout of
+https://github.com/onepromptman/sori-app. `python3` may be `python` or `py`
+on Windows. The first run on a new machine installs Sori's own environment
+(see `/sori:setup`); say so before it happens.
 
 ## Run it
 
 ```bash
-python "$SORI/app.py" --sweep
+python3 "$SORI/sori.py" sweep
 ```
 
-State lives in `%USERPROFILE%\Sori`; `SORI_HOME=<dir>`
+State lives in `~/Sori` (`%USERPROFILE%\Sori` on Windows); `SORI_HOME=<dir>`
 points at another folder, which is how tests and staging runs stay off the
 user's real subscriptions. The sweep reads `shows.json`, writes transcripts
-to `Transcripts\<Show>\` and decks to `Trainings\<Show>\`, prints to stdout
+to `Transcripts/<Show>/` and decks to `Trainings/<Show>/`, prints to stdout
 and appends the same lines to `sweep.log`.
 
-Before the first sweep on a machine, run `python "$SORI/shows.py" list`
+Before the first sweep on a machine, run `python3 "$SORI/sori.py" shows list`
 and look at the auto-train column: a show with auto-train on and a saved
 key makes one paid Claude call per new episode. Say so before running if
 any show is auto-train. A sweep with no auto-train shows is free.
@@ -38,6 +40,16 @@ Whisper on CPU takes minutes per episode and the first run downloads a
 ~150 MB model; run the sweep in the background for long queues. Never run
 two Sori instances (window or sweep) on one state dir at once; both
 auto-queue the same episodes.
+
+## Scheduling it
+
+- **Cowork**: a recurring Cowork task with the prompt in `docs/AUTOMATE.md`
+  (b), daily. The task must run on this computer, not in the cloud, so the
+  sweep can reach YouTube and podcast hosts from a home IP and keep the
+  files in `~/Sori`.
+- **macOS / Linux shell**: `docs/AUTOMATE.md` (d) has the launchd plist and
+  the cron line; both call `python3 "$SORI/sori.py" sweep`.
+- **Windows**: the exe's `setup-auto-sweep.bat`, or (b).
 
 ## Read the output (same shape in stdout and sweep.log)
 
@@ -50,10 +62,10 @@ Checked 3 show(s): 2 new episode(s).
 1 episode(s) left for manual review (show not set to auto).
   > transcribing: Some title
     downloading the Whisper model (first run only)…
-    saved: C:\Users\me\Sori\Transcripts\The Daily\2026-09-05 - Some title.txt
+    saved: /Users/me/Sori/Transcripts/The Daily/2026-09-05 - Some title.txt
     failed: <reason> (will try again next sweep, 2 left)   |  (giving up — use Retry in the app)
   > generating training: Some title
-    saved: ...\Trainings\The Daily\2026-09-05 - Some title.pptx
+    saved: .../Trainings/The Daily/2026-09-05 - Some title.pptx
     training failed: <reason>
 Done in 135.2s — 1 transcribed, 0 failed, 1 skipped, 0 trained, 0 training failed.
 ```
@@ -71,7 +83,8 @@ re-running.
    count (`wc -w`); spoken English runs 150 to 220 words per minute, so a
    much lower count means captions or audio were incomplete; say so.
 3. Every `failed:` and `! ` line with its reason, and whether it will retry
-   or has given up.
+   or has given up. A YouTube bot-check or 403: run
+   `python3 "$SORI/sori.py" update` once and say so.
 4. `[manual]` rows: new episodes the user can transcribe by hand
    (`/sori:transcribe`) or switch to Auto (`/sori:shows`).
 

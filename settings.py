@@ -7,14 +7,14 @@ a Claude Code / Cowork skill can set them. Every verb goes through app.Api
 (the window's bridge) and the same shows.json / credentials.json, so the exe
 and the CLI always agree. Honours SORI_HOME.
 
-    py settings.py show [--json]
-    py settings.py model <tiny.en|base.en|small.en|large-v3>
-    py settings.py lang <auto|en|ko>          (ko needs large-v3; the engine refuses .en)
-    py settings.py deck-theme <baek|dark|dancheong>
-    py settings.py transcripts-dir <path>     created if missing
-    py settings.py transcripts-dir --default  back to <SORI_HOME>/Transcripts
-    py settings.py api-key set                reads ANTHROPIC_API_KEY from the environment
-    py settings.py api-key clear | status
+    python3 sori.py settings show [--json]
+    python3 sori.py settings model <tiny.en|base.en|small.en|large-v3>
+    python3 sori.py settings lang <auto|en|ko>          (ko needs large-v3; the engine refuses .en)
+    python3 sori.py settings deck-theme <baek|dark|dancheong>
+    python3 sori.py settings transcripts-dir <path>     created if missing
+    python3 sori.py settings transcripts-dir --default  back to <SORI_HOME>/Transcripts
+    python3 sori.py settings api-key set                reads ANTHROPIC_API_KEY from the environment
+    python3 sori.py settings api-key clear | status
 
 The API key is never accepted on the command line (argv lands in shell
 history and process listings) and never printed beyond its last 4 characters.

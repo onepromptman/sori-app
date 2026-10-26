@@ -101,23 +101,27 @@ health check.
 
 ## Before the paid run
 
-- **Blocker (cross-lane, `app.py`):** the sweep's auto-train path resolves
-  the key through `app.anthropic_api_key()`, which reads `credentials.json`
-  only. Until it falls back to `ANTHROPIC_API_KEY`, a cloud run with an
-  auto-train show fails with "No Claude API key set" rather than spending.
-  That is a safe failure, but the paid run cannot succeed before the
-  fallback lands. Do not work around it by writing `credentials.json` into
-  the runner: the whole point is that the key never touches the output repo.
-  Any fallback must be gated to the cloud entrypoint (an explicit opt-in that
-  only `sweep_cloud.sh` sets) rather than a bare `os.environ` read in
-  `app.anthropic_api_key()`: that function also serves the desktop app's
-  scheduled `--sweep` over Bryan's real shows, and a bare read would let a
-  stray shell `ANTHROPIC_API_KEY` turn on paid auto-train without a key ever
-  being entered in Settings. Which design lands is Bryan's call (spend).
-- **Unverified on Linux:** deck rendering has been run only on Windows
-  (`deck_render.install_fonts` writes to the Windows user font folder).
-  Expect the first paid run to be a fact-finding run; budget one call.
+- **Key gating (done in 3.3):** `sweep_cloud.sh` exports
+  `SORI_KEY_FROM_ENV=1` when `ANTHROPIC_API_KEY` is present, and
+  `app.anthropic_api_key()` honours the variable only under that opt-in.
+  The desktop sweep never sets it. Nothing else to land.
+- **Network access (new finding, 2026-10-26):** the routine's environment
+  must use **Custom** network access with the YouTube hosts listed in
+  `cloud/README.md`; under the default **Trusted** level every fetch is a
+  `403` and a run transcribes nothing. Also expect YouTube's datacenter bot
+  check to fail some videos; those retry twice and park.
+- **Unverified on Linux:** deck rendering has been run only on Windows for
+  the private engine; the public `studio` theme renders anywhere (CI covers
+  it on ubuntu and macos). Budget one call for the first paid run.
 - Then: add `ANTHROPIC_API_KEY` as a routine secret, flip one show to
   `auto_train: true` in `state/shows.json`, get Bryan's yes for that single
   run, trigger once, and confirm `1 trained` in the commit message plus a
   `.pptx` and `.md` under `state/Trainings/<Show>/`.
+
+## Why this is not the universal route
+
+For anyone but the repo owner this route is not plug-and-play: it needs a
+GitHub token, an output repo, and a custom egress allowlist, and it cannot
+run Whisper or author the deck outline without a paid key. The Claude
+plugin on the user's own machine (`docs/CLAUDE-NATIVE.md`) is the route for
+everyone else; see `docs/HOSTING.md` for the comparison.

@@ -1954,7 +1954,7 @@ def selftest() -> int:
     # them (Sori.spec datas) — a missing/misnamed data entry wouldn't show up
     # as an import failure otherwise. The fonts are OFL and ship in every
     # checkout; only engine/ is optional.
-    # The private BH engine is optional (see themes/README.md): a checkout
+    # The private deck engine is optional (see themes/README.md): a checkout
     # without engine/ renders with themes/studio and is fully functional, so
     # its absence is reported, never counted as a failure.
     try:

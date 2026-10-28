@@ -13,7 +13,7 @@ from PyInstaller.utils.hooks import collect_all
 # a plain collect_all drags ~500MB of torch/opencv/pyarrow into the bundle.
 #
 # matplotlib is NOT excluded (unlike the rest of this list) — engine/deckgen.py
-# (the vendored BH-SEOUL deck renderer) imports it unconditionally at module
+# (the vendored private deck renderer) imports it unconditionally at module
 # load, even though Sori never uses its PNG-preview path.
 EXCLUDES = [
     'torch', 'torchvision', 'torchaudio',

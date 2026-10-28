@@ -1,9 +1,10 @@
 # The Sori cloud routine (captions-only)
 
 > **Maintainer's own setup.** This page is the operator runbook, not a user
-> guide. The repos it names (`onepromptman/sori`, `onepromptman/sori-output`)
-> are private and will 404 for you. It is published because the shape is
-> worth copying: point the two repo names at your own and the rest holds.
+> guide. The routine clones this public repo (`onepromptman/sori-app`) and
+> pushes to a private output repo of your own, written `<owner>/sori-output`
+> below. It is published because the shape is worth copying: create that
+> repo and the rest holds.
 
 A Claude Code scheduled cloud agent (`/schedule`) that runs
 `cloud/sweep_cloud.sh` once a day: checks the YouTube channels listed in the
@@ -17,19 +18,19 @@ copy-paste once Bryan says yes.
 ## What Bryan must confirm first
 
 1. **Decision 2 (destination).** Outputs go to a private GitHub repo
-   `onepromptman/sori-output`, one commit per run (recommended in the v3.2
+   `<owner>/sori-output`, one commit per run (recommended in the v3.2
    handoff; the alternative was Google Drive via connector). Creating that
    repo is itself ask-first.
 2. **Spend.** The dry run below has training disabled and costs nothing
    beyond the routine's own runtime. The first run with `ANTHROPIC_API_KEY`
    set and an auto-train show is a paid Claude call per new video and needs
    an explicit yes. Also see the blocker under "Before the paid run".
-3. **Repo access for the routine.** `onepromptman/sori` is private; the
-   routine needs read access to it and write (push) access to `sori-output`.
+3. **Repo access for the routine.** The routine reads this public repo (no
+   token needed) and needs write (push) access to `sori-output`.
 
 ## Prerequisites (one-time, by Bryan)
 
-- `onepromptman/sori-output` exists, private, with the layout in
+- `<owner>/sori-output` exists, private, with the layout in
   `cloud/README.md`: a `.gitignore` holding `state/credentials.json`,
   `state/*.json.tmp`, `state/*.json.bad`, and a `state/shows.json` that
   lists only YouTube shows. Build that file from a Sori checkout:
@@ -41,9 +42,8 @@ copy-paste once Bryan says yes.
 
   Add `--auto-train` only after the paid run is approved.
 - Secrets on the routine:
-  - a GitHub token that can read `onepromptman/sori` and push to
-    `onepromptman/sori-output` (fine-grained PAT scoped to those two repos,
-    Contents: read on sori, read/write on sori-output);
+  - a GitHub token that can push to `<owner>/sori-output` (fine-grained
+    PAT scoped to that one repo, Contents: read/write);
   - `ANTHROPIC_API_KEY`, **optional**; leave it unset for the dry run.
 
 ## Schedule
@@ -60,9 +60,9 @@ share a `shows.json`, and they do not: the cloud list lives in
 ```
 You are running the Sori captions-only sweep. Do exactly this and nothing else.
 
-1. Clone https://github.com/onepromptman/sori (private, use the GitHub token
-   provided as a secret) at the default branch into ./sori, and clone
-   https://github.com/onepromptman/sori-output into ./sori-output.
+1. Clone https://github.com/onepromptman/sori-app (public) at the default
+   branch into ./sori, and clone https://github.com/<owner>/sori-output
+   (private, use the GitHub token provided as a secret) into ./sori-output.
 2. In ./sori run: python3 -m pip install -r requirements-captions.txt
 3. Configure git in ./sori-output with user.name "sori-routine" and
    user.email "sori-routine@users.noreply.github.com".

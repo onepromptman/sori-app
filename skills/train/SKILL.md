@@ -1,7 +1,7 @@
 ---
 name: train
 description: >
-  Turn a Sori transcript (.txt) into a BH·SEOUL training deck (.pptx) plus a
+  Turn a Sori transcript (.txt) into a training deck (.pptx) plus a
   study guide (.md). Default route is free: you (the session) write the deck
   outline from the transcript against Sori's rules, and train.py renders it
   locally, no API key. The optional API route makes one paid Claude call on

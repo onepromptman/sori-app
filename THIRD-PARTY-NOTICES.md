@@ -55,7 +55,7 @@ own source ships in the release beyond that bootloader.
 
 ## Vendored deck engine (not in public checkouts)
 
-`engine/deckgen.py` is Bryan Hong's own BH·SEOUL deck renderer, vendored
+`engine/deckgen.py` is OnePromptMan's own deck renderer, vendored
 verbatim from a private repository and redistributed here under this
 project's MIT licence. It is not distributed in public checkouts or in
 the released archive.

@@ -16,7 +16,7 @@ auto-train (paid; see the spend gate in `ROUTINE.md`).
 Nothing in this folder creates the routine or the output repo. Both are
 ask-first.
 
-## The output repo: `onepromptman/sori-output` (private)
+## The output repo: `<owner>/sori-output` (private)
 
 **Decision 2 of the v3.2 handoff, recommended and not yet confirmed by
 Bryan.** The alternative was Google Drive via connector. Until he confirms,

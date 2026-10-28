@@ -72,7 +72,7 @@ the verbatim routine prompt, the secrets, and the dry-run-first procedure
 are in [`cloud/ROUTINE.md`](../cloud/ROUTINE.md); the output layout is in
 [`cloud/README.md`](../cloud/README.md).
 
-What lands where: a private repo, proposed as `onepromptman/sori-output`
+What lands where: a private repo, proposed as `<owner>/sori-output`
 (handoff Decision 2, recommended, not yet confirmed by Bryan). Its
 `state/shows.json` is the cloud's own subscription list (YouTube channels
 only), and each run commits `state/Transcripts/...`, `state/sweep.log`, and

@@ -20,13 +20,13 @@ from pathlib import Path
 
 from themes import studio
 
-# The BH-SEOUL engine is OPTIONAL. `engine/` holds a vendored private renderer
+# The private deck engine is OPTIONAL. `engine/` holds a vendored private renderer
 # and its licensed fonts; a public checkout does not ship it, and Sori must
 # still produce decks without it. So the import is soft, and `themes/studio.py`
 # is the always-present default. See themes/README.md for the backend contract.
 #
 # deckgen also resolves its colour tokens at import and print()s a "tokens.css
-# not found" WARNING to stdout when the seoul repo isn't a sibling checkout --
+# not found" WARNING to stdout when its design-token repo isn't a sibling checkout --
 # which it never is here. The fallback it then uses is the canonical palette, so
 # the message is noise on every launch. Swallow stdout for the import only; the
 # vendored file itself is never edited.
@@ -38,10 +38,10 @@ except Exception:                                   # pragma: no cover - absent 
     install_fonts = None
 
 # User-facing theme name -> the mode string its backend wants. "baek" is
-# BH-SEOUL's white/hanji theme; in deckgen it IS "light" (light mode's
+# the engine's white/hanji theme; in deckgen it IS "light" (light mode's
 # background token is --bh-baek) -- there's no separate "baek" key in
 # deckgen.MODES. THEMES stays a dict because the settings UI reads
-# Object.keys(themes); BH entries come first so an installed engine keeps
+# Object.keys(themes); engine entries come first so an installed engine keeps
 # baek as the default.
 _BH_MODES = {"baek": "light", "dark": "dark", "dancheong": "dancheong"}
 THEMES = {**(_BH_MODES if deckgen is not None else {}),

@@ -177,8 +177,9 @@ def _safe_name(text: str, limit: int = 90) -> str:
 
 _store_lock = threading.RLock()
 
+# "studio" is the one deck theme every checkout has (themes/studio.py).
 DEFAULT_SETTINGS = {"model": "base.en", "device": "cpu", "lang": "en", "transcripts_dir": None,
-                     "deck_theme": "baek"}
+                     "deck_theme": "studio"}
 # Every store has this bucket; shows never point at nothing.
 UNSORTED_FOLDER = {"id": "unsorted", "name": "Unsorted"}
 
@@ -643,6 +644,18 @@ def run_training(show: dict, episode: dict, transcript_path: Path, settings: dic
     if not transcript_path.exists():
         raise TrainingError("The transcript for this episode is missing.")
 
+    # Check the deck theme BEFORE the paid call: a theme this checkout cannot
+    # render (e.g. "baek" saved by an older build; it needs the private engine)
+    # must fail here, for free, not after the deck has been paid for.
+    try:
+        import deck_render
+    except Exception as exc:
+        raise TrainingError(f"Deck rendering is unavailable: {exc}") from exc
+    theme = settings.get("deck_theme") or deck_render.DEFAULT_THEME
+    if theme not in deck_render.THEMES:
+        raise TrainingError(f"Deck theme {theme!r} isn't available in this build; "
+                            f"pick one in Settings ({', '.join(deck_render.THEMES)}).")
+
     check_cancel()
     report("writing", None)
     transcript_text = transcript_path.read_text(encoding="utf-8")
@@ -658,9 +671,7 @@ def run_training(show: dict, episode: dict, transcript_path: Path, settings: dic
 
     check_cancel()
     report("rendering", None)
-    theme = settings.get("deck_theme", "baek")
     try:
-        import deck_render
         deck_render.render_pptx(result.outline, theme, pptx_path)
     except tr.TrainingGenerationError:
         raise

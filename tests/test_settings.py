@@ -39,7 +39,7 @@ def test_show_defaults(settings, sori_home, capsys):
     assert code == 0 and err == ""
     assert "model           base.en" in out
     assert "lang            en" in out
-    assert "deck_theme      baek" in out
+    assert "deck_theme      studio" in out
     assert "api key         not set" in out
     assert str(sori_home / "Transcripts") in out
     assert "tokens.css" not in out  # deck_render's import warning stays out of CLI output
@@ -48,7 +48,7 @@ def test_show_defaults(settings, sori_home, capsys):
     assert snap == {
         "model": "base.en", "lang": "en",
         "transcripts_dir": str(sori_home / "Transcripts"),
-        "deck_theme": "baek", "api_key_set": False, "api_key_last4": None,
+        "deck_theme": "studio", "api_key_set": False, "api_key_last4": None,
     }
 
 

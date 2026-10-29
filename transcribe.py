@@ -8,9 +8,11 @@ Two paths to a transcript:
 
 No OpenAI/AssemblyAI key required. See README.md for setup and examples.
 """
+
 from __future__ import annotations
 
 import argparse
+import logging
 import os
 import re
 import sys
@@ -20,6 +22,14 @@ import urllib.request
 import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
 from pathlib import Path
+
+import sori_log
+
+log = logging.getLogger(__name__)
+
+# Seconds any one connect or read of an audio download may take (not the
+# whole download).
+DOWNLOAD_TIMEOUT_S = 60
 
 ITUNES_NS = {"itunes": "http://www.itunes.com/dtds/podcast-1.0.dtd"}
 
@@ -32,8 +42,10 @@ class TranscriptionCancelled(Exception):
 # RSS feed helpers
 # ---------------------------------------------------------------------------
 
+
 def fetch_xml(url: str, timeout: int = 30) -> bytes:
     """GET a feed URL and return raw bytes. Shared by the CLI and the app."""
+    log.debug("fetching feed from %s", sori_log.source(url))
     req = urllib.request.Request(url, headers={"User-Agent": "podcast-transcriber/1.0"})
     with urllib.request.urlopen(req, timeout=timeout) as resp:
         return resp.read()
@@ -52,13 +64,15 @@ def parse_rss_episodes(root: ET.Element) -> list[dict]:
             continue
         url = enclosure_el.get("url", "")
         guid = (guid_el.text or "").strip() if guid_el is not None and guid_el.text else url
-        episodes.append({
-            "title": (title_el.text or "").strip() if title_el is not None else "",
-            "mp3_url": url,
-            "pub_date": (pubdate_el.text or "").strip() if pubdate_el is not None else "",
-            "duration": duration_el.text if duration_el is not None else None,
-            "guid": guid,
-        })
+        episodes.append(
+            {
+                "title": (title_el.text or "").strip() if title_el is not None else "",
+                "mp3_url": url,
+                "pub_date": (pubdate_el.text or "").strip() if pubdate_el is not None else "",
+                "duration": duration_el.text if duration_el is not None else None,
+                "guid": guid,
+            }
+        )
     return episodes
 
 
@@ -107,6 +121,7 @@ def cmd_list(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 # YouTube captions path
 # ---------------------------------------------------------------------------
+
 
 def _clean_vtt(vtt_text: str) -> str:
     """Strip VTT timing/tags and collapse rolling (repeated) caption lines."""
@@ -202,8 +217,7 @@ def pick_caption_track(available: list[str], lang: str = "en") -> str | None:
         return f"{lang}-orig"
     # Real regional variants use an uppercase region (en-US, en-GB); the
     # lowercase-suffixed ones are translation pairs, which we don't want.
-    regional = sorted(t for t in tracks
-                      if re.fullmatch(rf"{re.escape(lang)}-[A-Z]{{2}}", t))
+    regional = sorted(t for t in tracks if re.fullmatch(rf"{re.escape(lang)}-[A-Z]{{2}}", t))
     return regional[0] if regional else None
 
 
@@ -222,10 +236,12 @@ def _fetch_vtt(url: str, lang: str = "en", meta: dict | None = None) -> str | No
     if meta is not None:
         # What the saved transcript's header needs; the app's sweep gets the
         # same fields from the channel feed instead.
-        meta.update(title=info.get("title") or "",
-                    show=info.get("channel") or info.get("uploader") or "",
-                    date=_iso_date(info.get("upload_date") or ""),
-                    url=info.get("webpage_url") or url)
+        meta.update(
+            title=info.get("title") or "",
+            show=info.get("channel") or info.get("uploader") or "",
+            date=_iso_date(info.get("upload_date") or ""),
+            url=info.get("webpage_url") or url,
+        )
 
     offered = list((info.get("subtitles") or {}).keys())
     offered += list((info.get("automatic_captions") or {}).keys())
@@ -292,6 +308,7 @@ def cmd_youtube(args: argparse.Namespace) -> None:
 # Local Whisper path
 # ---------------------------------------------------------------------------
 
+
 def _download_audio(url_or_path: str, dest_dir: Path, on_progress=None, cancel=None) -> Path:
     """Download an audio URL (streamed, so long episodes never sit in RAM).
 
@@ -302,7 +319,11 @@ def _download_audio(url_or_path: str, dest_dir: Path, on_progress=None, cancel=N
     if re.match(r"^https?://", url_or_path):
         dest = dest_dir / "episode.mp3"
         req = urllib.request.Request(url_or_path, headers={"User-Agent": "podcast-transcriber/1.0"})
-        with urllib.request.urlopen(req) as resp, open(dest, "wb") as f:
+        log.info("downloading audio from %s", sori_log.source(url_or_path))
+        # The timeout bounds each connect and read, not the whole download, so a
+        # long episode still finishes; a server that stops sending fails instead
+        # of hanging the queue.
+        with urllib.request.urlopen(req, timeout=DOWNLOAD_TIMEOUT_S) as resp, open(dest, "wb") as f:
             total = int(resp.headers.get("Content-Length") or 0)
             got = 0
             while chunk := resp.read(262144):
@@ -385,6 +406,7 @@ def load_whisper_model(model_name: str, device: str):
             from faster_whisper import WhisperModel
 
             compute_type = "int8" if device == "cpu" else "float16"
+            log.info("loading Whisper model %s on %s (%s)", model_name, device, compute_type)
             model = WhisperModel(model_name, device=device, compute_type=compute_type)
             _MODEL_CACHE[key] = model
         return model
@@ -456,8 +478,12 @@ def cmd_episode(args: argparse.Namespace) -> None:
         transcript, duration = _whisper_or_exit(audio_path, args.model, args.device)
 
     out = args.out or _slugify(episode["title"]) + ".txt"
-    meta = {"title": episode["title"], "show": show, "date": _iso_date(episode["pub_date"]),
-            "url": episode["mp3_url"]}
+    meta = {
+        "title": episode["title"],
+        "show": show,
+        "date": _iso_date(episode["pub_date"]),
+        "url": episode["mp3_url"],
+    }
     _write_output(transcript, out, _meta_from_args(args, meta))
     _report_completeness(transcript, expected_seconds=duration)
 
@@ -465,6 +491,7 @@ def cmd_episode(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 # Shared helpers
 # ---------------------------------------------------------------------------
+
 
 def _slugify(text: str) -> str:
     text = re.sub(r"[^\w\s-]", "", text).strip().lower()
@@ -477,9 +504,11 @@ def header_block(meta: dict | None) -> str:
     without --title/--show/--date. Empty when there is no title to lead with."""
     if not meta or not (meta.get("title") or "").strip():
         return ""
-    return (f"{meta.get('title', '').strip()}\n"
-            f"{(meta.get('show') or '').strip()} — {(meta.get('date') or '').strip()}\n"
-            f"{(meta.get('url') or '').strip()}\n\n")
+    return (
+        f"{meta.get('title', '').strip()}\n"
+        f"{(meta.get('show') or '').strip()} — {(meta.get('date') or '').strip()}\n"
+        f"{(meta.get('url') or '').strip()}\n\n"
+    )
 
 
 def _meta_from_args(args: argparse.Namespace, base: dict | None) -> dict:
@@ -519,6 +548,7 @@ def _report_completeness(transcript: str, expected_seconds: float | None) -> Non
 # CLI
 # ---------------------------------------------------------------------------
 
+
 def _add_header_flags(p: argparse.ArgumentParser) -> None:
     """Saved transcripts start with Sori's three-line header (title, show and
     date, source); these override what the source reported."""
@@ -551,7 +581,8 @@ def build_parser() -> argparse.ArgumentParser:
     p_audio.add_argument("url_or_path")
     p_audio.add_argument("--out", help="Output .txt path (default: print to stdout)")
     p_audio.add_argument(
-        "--model", default="base.en",
+        "--model",
+        default="base.en",
         help="Whisper model size (default: base.en). Drop the .en suffix for non-English audio.",
     )
     p_audio.add_argument("--device", default="cpu", choices=["cpu", "cuda"])
@@ -571,6 +602,7 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main() -> None:
+    sori_log.setup()
     parser = build_parser()
     args = parser.parse_args()
     args.func(args)

@@ -30,7 +30,7 @@ EXCLUDES = [
 # has to travel with the binaries it covers, so it ships whenever they do.
 import os
 datas = [('ui', 'ui')]
-hiddenimports = ['transcribe', 'training', 'deck_render', 'themes',
+hiddenimports = ['sori_log', 'transcribe', 'training', 'deck_render', 'themes',
                   'themes.studio']
 if os.path.isdir('engine'):
     hiddenimports += ['engine', 'engine.deckgen', 'engine.install_fonts']

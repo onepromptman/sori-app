@@ -21,6 +21,7 @@ history and process listings) and never printed beyond its last 4 characters.
 It is stored in credentials.json, never in shows.json. Exit codes: 0 ok, 1
 the engine refused (message on stderr, "!! "), 2 usage.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -31,6 +32,7 @@ import os
 import sys
 
 import app
+import sori_log
 
 MODELS = ("tiny.en", "base.en", "small.en", "large-v3")
 LANGS = ("auto", "en", "ko")
@@ -82,13 +84,18 @@ def _key_line(s: dict) -> str:
 
 
 def _print_snapshot(s: dict) -> None:
-    for label, value in (("model", s["model"]), ("lang", s["lang"]),
-                         ("transcripts_dir", s["transcripts_dir"]),
-                         ("deck_theme", s["deck_theme"]), ("api key", _key_line(s))):
+    for label, value in (
+        ("model", s["model"]),
+        ("lang", s["lang"]),
+        ("transcripts_dir", s["transcripts_dir"]),
+        ("deck_theme", s["deck_theme"]),
+        ("api key", _key_line(s)),
+    ):
         print(f"{label:16}{value}")
 
 
 # -- verbs ------------------------------------------------------------------
+
 
 def cmd_show(api: app.Api, args) -> int:
     snap = _snapshot(api)
@@ -137,8 +144,10 @@ def cmd_api_key(api: app.Api, args) -> int:
     if action == "set":
         key = (os.environ.get("ANTHROPIC_API_KEY") or "").strip()
         if not key:
-            raise CliError("ANTHROPIC_API_KEY is not set in the environment "
-                           "(the key is never taken from the command line)")
+            raise CliError(
+                "ANTHROPIC_API_KEY is not set in the environment "
+                "(the key is never taken from the command line)"
+            )
         res = _call(api.set_training_settings, {"api_key": key})
         print(f"saved (...{res['api_key_last4']})")
         return 0
@@ -147,9 +156,11 @@ def cmd_api_key(api: app.Api, args) -> int:
 
 # -- argparse ---------------------------------------------------------------
 
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="settings.py",
-                                description="Sori settings from the shell (same store as the window).")
+    p = argparse.ArgumentParser(
+        prog="settings.py", description="Sori settings from the shell (same store as the window)."
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("show", help="print every setting")
@@ -191,6 +202,7 @@ def _tolerant_streams() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     _tolerant_streams()
+    sori_log.setup()
     try:
         args = build_parser().parse_args(argv)
     except SystemExit as exc:  # argparse: 2 on usage error, 0 on --help

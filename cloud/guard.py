@@ -9,6 +9,7 @@ Reads $SORI_HOME/shows.json directly (no import of app.py: no dependencies,
 no side effects, no state migration). Exit codes: 0 ok (including a missing
 file or zero shows), 3 when any show is not a YouTube show.
 """
+
 from __future__ import annotations
 
 import json

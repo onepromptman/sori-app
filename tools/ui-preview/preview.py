@@ -14,6 +14,7 @@ Open the URL in Chrome (Claude in Chrome works: navigate, javascript_tool,
 screenshot). Edit stub.js to stage other row states. Never point this at
 real subscriptions; the stub data is what a public screenshot may contain.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -43,7 +44,7 @@ def build(dest: Path) -> Path:
     m = re.search(r'<script[^>]*src="[^"]*app\.js"', html)
     if not m:
         sys.exit("ui/index.html: app.js script tag not found")
-    html = html[: m.start()] + '<script src="stub.js"></script>\n' + html[m.start():]
+    html = html[: m.start()] + '<script src="stub.js"></script>\n' + html[m.start() :]
     out = dest / "preview.html"
     out.write_text(html, encoding="utf-8")
     return out
@@ -69,10 +70,21 @@ def main() -> int:
         if not edge:
             sys.exit("Edge not found; open the URL in a browser instead")
         out = Path(args.shot).resolve()
-        subprocess.run([str(edge), "--headless=new", "--disable-gpu", "--hide-scrollbars",
-                        f"--window-size={args.size}", "--virtual-time-budget=6000",
-                        f"--screenshot={out}", url], check=False,
-                       stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+        subprocess.run(
+            [
+                str(edge),
+                "--headless=new",
+                "--disable-gpu",
+                "--hide-scrollbars",
+                f"--window-size={args.size}",
+                "--virtual-time-budget=6000",
+                f"--screenshot={out}",
+                url,
+            ],
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
         print("wrote", out if out.exists() else "(nothing: Edge failed)")
         srv.shutdown()
         return 0 if out.exists() else 1

@@ -12,6 +12,7 @@ installed here".
     py tools/lock.py            # writes requirements.lock
     py tools/lock.py --check    # exit 1 if the file is stale
 """
+
 from __future__ import annotations
 
 import re
@@ -40,6 +41,7 @@ def _wanted(req: str) -> bool:
         return False
     try:
         from packaging.markers import Marker
+
         return bool(Marker(marker).evaluate())
     except Exception:
         return True  # fall through to the "is it installed" check
@@ -70,6 +72,7 @@ def closure(pins: list[str]) -> dict[str, str]:
             if _wanted(req):
                 todo.append(_NAME.match(req).group(1))
     return out
+
 
 # Direct pins must match what is installed; anything else means the lock
 # would silently describe a different environment than pyproject promises.

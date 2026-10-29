@@ -5,8 +5,9 @@
 # Deliberately NOT included: faster-whisper (no local audio transcription, so
 # RSS/audio shows cannot be processed here; cloud/guard.py refuses them) and
 # pywebview (no window). See docs/AUTOMATE.md and cloud/ROUTINE.md.
-yt-dlp
-anthropic
-python-pptx
-numpy
-matplotlib
+# Exact pins, copied from pyproject.toml's `captions` extra.
+yt-dlp==2026.7.4
+anthropic==0.89.0
+python-pptx==1.0.2
+numpy==2.4.4
+matplotlib==3.11.0

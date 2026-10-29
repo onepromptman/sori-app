@@ -27,6 +27,7 @@ function::
 
 where `slides` is the list of dicts `deck_render._slide_spec()` produces.
 """
+
 from __future__ import annotations
 
 from pptx import Presentation
@@ -35,9 +36,9 @@ from pptx.enum.shapes import MSO_SHAPE
 from pptx.enum.text import MSO_ANCHOR, PP_ALIGN
 from pptx.util import Inches, Pt
 
-SW_IN, SH_IN = 13.333, 7.5      # 16:9, matching PowerPoint's widescreen default
-PAD_X, PAD_Y = 0.917, 0.75      # 88px / 72px of source padding
-COL_W = SW_IN - 2 * PAD_X       # 11.5in of usable width
+SW_IN, SH_IN = 13.333, 7.5  # 16:9, matching PowerPoint's widescreen default
+PAD_X, PAD_Y = 0.917, 0.75  # 88px / 72px of source padding
+COL_W = SW_IN - 2 * PAD_X  # 11.5in of usable width
 
 # --- palette ---------------------------------------------------------------
 # Light surfaces. PAPER is deliberately not #FFFFFF and INK is deliberately not
@@ -49,9 +50,9 @@ PANEL = "ECECE6"
 INK = "14171C"
 MUTED = "6F7172"
 LINE = "D7D8D6"
-METAL = "C9A24B"        # hairline gold — structure, never text
-ACCENT = "0B4DA2"       # cobalt: THE load-bearing colour
-POP = "C8202E"          # spent once or twice per deck, never as body colour
+METAL = "C9A24B"  # hairline gold — structure, never text
+ACCENT = "0B4DA2"  # cobalt: THE load-bearing colour
+POP = "C8202E"  # spent once or twice per deck, never as body colour
 
 # Dark surfaces carry the cover, the section breaks and the closing. Gold takes
 # over as the load-bearing accent there: cobalt on near-black has too little
@@ -89,10 +90,10 @@ def _num(emphasis: bool = True):
     return FONT_MONO, emphasis
 
 
-# Two anchors and their satellites. Nothing lives between T_H1 and T_BODY:
+# Two anchors and their supporting sizes. Nothing lives between T_H1 and T_BODY:
 # reaching for a mid-sized subhead is the clearest tell that a deck was
 # generated rather than set, so there is no mid size here to reach for.
-T_STAT = 99.0           # the numeral IS the slide
+T_STAT = 99.0  # the numeral IS the slide
 T_DISPLAY = 69.0
 T_COVER = 63.0
 T_H1 = 45.0
@@ -133,8 +134,7 @@ def _txt(slide, x, y, w, h, anchor=MSO_ANCHOR.TOP):
     return tf
 
 
-def _run(p, text, font, size, colour, bold=False, upper=False, align=None,
-         space_after=0.0, track=0.0):
+def _run(p, text, font, size, colour, bold=False, upper=False, align=None, space_after=0.0, track=0.0):
     """`track` is letter-spacing in em. It is written straight to the run's
     XML `spc` attribute (hundredths of a point) because python-pptx exposes no
     API for it. The tempting shortcut -- interleaving spaces into the string --
@@ -160,8 +160,7 @@ def _para(tf, first: bool):
 
 
 def _rect(slide, x, y, w, h, colour):
-    sh = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y),
-                                Inches(w), Inches(h))
+    sh = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
     sh.fill.solid()
     sh.fill.fore_color.rgb = _rgb(colour)
     sh.line.fill.background()
@@ -170,8 +169,7 @@ def _rect(slide, x, y, w, h, colour):
 
 
 def _dot(slide, x, y, d, colour):
-    sh = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(x), Inches(y),
-                                Inches(d), Inches(d))
+    sh = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(x), Inches(y), Inches(d), Inches(d))
     sh.fill.solid()
     sh.fill.fore_color.rgb = _rgb(colour)
     sh.line.fill.background()
@@ -201,8 +199,7 @@ ADV_BODY = 0.51
 ADV_DISPLAY = 0.59
 
 
-def _wrapped_lines(text: str, width_in: float, pt: float,
-                   adv: float | None = None) -> int:
+def _wrapped_lines(text: str, width_in: float, pt: float, adv: float | None = None) -> int:
     """How many lines `text` needs at `pt` in a box `width_in` wide. `adv`
     defaults to the *current* body advance rather than binding it as a default
     argument, which would freeze whichever font set was active at import.
@@ -213,8 +210,7 @@ def _wrapped_lines(text: str, width_in: float, pt: float,
     the second line.
     """
     chars_per_line = max(int((width_in * 72.0) / (pt * (adv or ADV_BODY))), 1)
-    return sum(max(1, -(-len(seg) // chars_per_line))
-               for seg in (text or "").split("\n")) or 1
+    return sum(max(1, -(-len(seg) // chars_per_line)) for seg in (text or "").split("\n")) or 1
 
 
 def _display_block(text: str, width_in: float, pt: float) -> float:
@@ -222,18 +218,17 @@ def _display_block(text: str, width_in: float, pt: float) -> float:
     return _wrapped_lines(text, width_in, pt, ADV_DISPLAY) * (pt * 1.32) / 72.0
 
 
-def _fit(text: str, width_in: float, base: float, min_pt: float,
-         max_lines: int) -> float:
+def _fit(text: str, width_in: float, base: float, min_pt: float, max_lines: int) -> float:
     """Step a display size down until it wraps within `max_lines`. Episode
     titles are not written to fit a slide, so the cover has to give."""
     pt = base
-    while pt > min_pt and _wrapped_lines(text, width_in, pt,
-                                         ADV_DISPLAY) > max_lines:
+    while pt > min_pt and _wrapped_lines(text, width_in, pt, ADV_DISPLAY) > max_lines:
         pt -= 3.0
     return pt
 
 
 # --- shared furniture ------------------------------------------------------
+
 
 def _chrome(slide, s, dark=False):
     """Eyebrow left, meta right, on one baseline at the top of the slide."""
@@ -243,13 +238,11 @@ def _chrome(slide, s, dark=False):
     if eyebrow:
         tf = _txt(slide, PAD_X, Y_CHROME, COL_W * 0.62, 0.3)
         p = _para(tf, True)
-        _run(p, eyebrow, FONT_MONO, T_EYEBROW, muted, upper=True,
-             track=TRACK_EYEBROW)
+        _run(p, eyebrow, FONT_MONO, T_EYEBROW, muted, upper=True, track=TRACK_EYEBROW)
     if meta:
         tf = _txt(slide, PAD_X + COL_W * 0.62, Y_CHROME, COL_W * 0.38, 0.3)
         p = _para(tf, True)
-        _run(p, meta, FONT_MONO, T_EYEBROW, muted, upper=True,
-             align=PP_ALIGN.RIGHT, track=TRACK_EYEBROW)
+        _run(p, meta, FONT_MONO, T_EYEBROW, muted, upper=True, align=PP_ALIGN.RIGHT, track=TRACK_EYEBROW)
 
 
 # Letter-spacing, in em, for the uppercase mono labels. An untracked
@@ -284,12 +277,10 @@ def _eyebrow_at(slide, text, y, dark=False):
         return
     tf = _txt(slide, PAD_X, y, COL_W, 0.28)
     p = _para(tf, True)
-    _run(p, text, FONT_MONO, T_EYEBROW, DARK_MUTED if dark else MUTED,
-         upper=True, track=TRACK_EYEBROW)
+    _run(p, text, FONT_MONO, T_EYEBROW, DARK_MUTED if dark else MUTED, upper=True, track=TRACK_EYEBROW)
 
 
-def _heading(slide, text, y=Y_HEAD, size=T_H1, colour=INK, width=None,
-             max_lines=2):
+def _heading(slide, text, y=Y_HEAD, size=T_H1, colour=INK, width=None, max_lines=2):
     """Draws the heading and returns the y it ended at. Callers place their
     rule and body from that return value, never from a fixed slot: a heading
     that wraps to two lines otherwise runs straight through both."""
@@ -320,8 +311,7 @@ def _lede(slide, text, y, width=None, colour=MUTED, size=T_BODY):
     _run(p, text, FONT_BODY, size, colour)
 
 
-def _bullets(slide, points, x, y, w, dark=False, label_pt=T_BODY,
-             sub_pt=T_SMALL, gap=0.30):
+def _bullets(slide, points, x, y, w, dark=False, label_pt=T_BODY, sub_pt=T_SMALL, gap=0.30):
     """Stacked rows measured cumulatively, so a label that wraps pushes the
     next row down instead of being overprinted by it."""
     ink = DARK_INK if dark else INK
@@ -332,8 +322,7 @@ def _bullets(slide, points, x, y, w, dark=False, label_pt=T_BODY,
         sub = pt_item.get("sub", "")
         lab_lines = _wrapped_lines(label, w - 0.34, label_pt)
         lab_h = lab_lines * (label_pt * 1.32) / 72.0
-        _rect(slide, x, cur + 0.055, 0.02, lab_h - 0.04, ACCENT if not dark
-              else DARK_ACCENT)
+        _rect(slide, x, cur + 0.055, 0.02, lab_h - 0.04, ACCENT if not dark else DARK_ACCENT)
         tf = _txt(slide, x + 0.28, cur, w - 0.34, lab_h)
         p = _para(tf, True)
         _run(p, label, FONT_BODY, label_pt, ink, bold=True)
@@ -351,6 +340,7 @@ def _bullets(slide, points, x, y, w, dark=False, label_pt=T_BODY,
 
 # --- dark slides -----------------------------------------------------------
 
+
 def _cover(slide, s):
     _bg(slide, DARK)
     _eyebrow_at(slide, s.get("eyebrow"), 0.86, dark=True)
@@ -362,24 +352,20 @@ def _cover(slide, s):
     p = _para(tf, True)
     _run(p, title, FONT_DISPLAY, pt, DARK_INK, bold=True)
     _rule(slide, 2.15 + h + 0.42, width=1.4, colour=DARK_ACCENT)
-    _lede(slide, s.get("lede"), 2.15 + h + 0.70, width=COL_W * 0.66,
-          colour=DARK_MUTED)
+    _lede(slide, s.get("lede"), 2.15 + h + 0.70, width=COL_W * 0.66, colour=DARK_MUTED)
 
 
 def _closing(slide, s):
     _bg(slide, DARK)
     _eyebrow_at(slide, s.get("eyebrow"), 0.86, dark=True)
-    bottom = _heading(slide, s.get("heading"), y=2.55, size=T_DISPLAY,
-                      colour=DARK_INK, width=COL_W * 0.82)
+    bottom = _heading(slide, s.get("heading"), y=2.55, size=T_DISPLAY, colour=DARK_INK, width=COL_W * 0.82)
     _rule(slide, bottom + 0.34, width=1.4, colour=DARK_ACCENT)
-    _lede(slide, s.get("cta"), bottom + 0.62, width=COL_W * 0.62,
-          colour=DARK_MUTED)
+    _lede(slide, s.get("cta"), bottom + 0.62, width=COL_W * 0.62, colour=DARK_MUTED)
     meta = (s.get("meta") or "").strip()
     if meta:
         tf = _txt(slide, PAD_X, Y_FOOT + 0.15, COL_W, 0.3)
         p = _para(tf, True)
-        _run(p, meta, FONT_MONO, T_MICRO, DARK_MUTED, upper=True,
-             track=TRACK_MICRO)
+        _run(p, meta, FONT_MONO, T_MICRO, DARK_MUTED, upper=True, track=TRACK_MICRO)
         _rect(slide, PAD_X, Y_FOOT, COL_W, 0.01, DARK_LINE)
 
 
@@ -387,11 +373,9 @@ def _divider(slide, s):
     _bg(slide, DARK)
     _chrome(slide, s, dark=True)
     _eyebrow_at(slide, s.get("eyebrow"), 2.5, dark=True)
-    bottom = _heading(slide, s.get("title"), y=2.85, size=T_DISPLAY,
-                      colour=DARK_INK, width=COL_W * 0.8)
+    bottom = _heading(slide, s.get("title"), y=2.85, size=T_DISPLAY, colour=DARK_INK, width=COL_W * 0.8)
     _rule(slide, bottom + 0.30, width=1.1, colour=DARK_ACCENT)
-    _lede(slide, s.get("lede"), bottom + 0.58, width=COL_W * 0.6,
-          colour=DARK_MUTED)
+    _lede(slide, s.get("lede"), bottom + 0.58, width=COL_W * 0.6, colour=DARK_MUTED)
 
 
 def _full_bleed(slide, s):
@@ -407,17 +391,16 @@ def _full_bleed(slide, s):
     tf = _txt(slide, PAD_X, 2.3, w, h + 0.2)
     p = _para(tf, True)
     _run(p, heading, FONT_DISPLAY, pt, DARK_INK, bold=True)
-    _lede(slide, s.get("lede"), 2.3 + h + 0.46, width=COL_W * 0.62,
-          colour="D6E0F0")
+    _lede(slide, s.get("lede"), 2.3 + h + 0.46, width=COL_W * 0.62, colour="D6E0F0")
     meta = (s.get("meta") or "").strip()
     if meta:
         tf = _txt(slide, PAD_X, Y_FOOT + 0.15, COL_W, 0.3)
         p = _para(tf, True)
-        _run(p, meta, FONT_MONO, T_MICRO, "D6E0F0", upper=True,
-             track=TRACK_MICRO)
+        _run(p, meta, FONT_MONO, T_MICRO, "D6E0F0", upper=True, track=TRACK_MICRO)
 
 
 # --- light slides ----------------------------------------------------------
+
 
 def _content(slide, s):
     _bg(slide, PAPER)
@@ -446,8 +429,7 @@ def _content_stat(slide, s):
     _run(p, num, fam, T_STAT * 0.72, ACCENT, bold=bd)
     tf = _txt(slide, x, Y_HEAD + 1.85, w, 0.4)
     p = _para(tf, True)
-    _run(p, hero.get("label", ""), FONT_MONO, T_EYEBROW, MUTED,
-         upper=True, track=TRACK_LABEL)
+    _run(p, hero.get("label", ""), FONT_MONO, T_EYEBROW, MUTED, upper=True, track=TRACK_LABEL)
     desc = (hero.get("desc") or "").strip()
     if desc:
         tf = _txt(slide, x, Y_HEAD + 2.30, w, 1.4)
@@ -458,7 +440,7 @@ def _content_stat(slide, s):
 
 def _data(slide, s):
     """Left-anchored hero numeral at 8x body size, then a rule, then at most
-    two receding satellites. The scale jump is the whole design."""
+    two receding supporting stats. The scale jump is the whole design."""
     _bg(slide, PAPER)
     _chrome(slide, s)
     _eyebrow_at(slide, s.get("rail_label"), 1.20)
@@ -488,8 +470,7 @@ def _data(slide, s):
         _run(p, str(st.get("num", "")), fam, T_SAT, INK, bold=bd)
         tf = _txt(slide, x, 5.15, 2.2, 0.5)
         p = _para(tf, True)
-        _run(p, st.get("label", ""), FONT_MONO, T_MICRO, MUTED,
-             upper=True, track=TRACK_LABEL)
+        _run(p, st.get("label", ""), FONT_MONO, T_MICRO, MUTED, upper=True, track=TRACK_LABEL)
         x += 2.5
     _foot(slide, s)
 
@@ -507,11 +488,17 @@ def _two_column(slide, s):
         _rect(slide, x, top, panel_w, 0.032, ACCENT if i == 0 else METAL)
         tf = _txt(slide, x + 0.28, top + 0.26, panel_w - 0.56, 0.4)
         p = _para(tf, True)
-        _run(p, side.get("heading", ""), FONT_MONO, T_EYEBROW, INK,
-             upper=True, track=TRACK_EYEBROW)
-        _bullets(slide, side.get("points"), x + 0.28, top + 0.72,
-                 panel_w - 0.56, label_pt=T_SMALL, sub_pt=T_MICRO,
-                 gap=0.14)
+        _run(p, side.get("heading", ""), FONT_MONO, T_EYEBROW, INK, upper=True, track=TRACK_EYEBROW)
+        _bullets(
+            slide,
+            side.get("points"),
+            x + 0.28,
+            top + 0.72,
+            panel_w - 0.56,
+            label_pt=T_SMALL,
+            sub_pt=T_MICRO,
+            gap=0.14,
+        )
     _foot(slide, s)
 
 
@@ -539,8 +526,7 @@ def _process(slide, s):
         sub = (st.get("sub") or "").strip()
         if sub:
             lines = _wrapped_lines(st.get("label", ""), w - 0.44, T_BODY)
-            tf = _txt(slide, x + 0.22, body + 0.82 + lines * 0.24 + 0.12,
-                      w - 0.44, 1.1)
+            tf = _txt(slide, x + 0.22, body + 0.82 + lines * 0.24 + 0.12, w - 0.44, 1.1)
             p = _para(tf, True)
             _run(p, sub, FONT_BODY, T_SMALL, MUTED)
     _foot(slide, s)
@@ -559,8 +545,7 @@ def _agenda(slide, s):
         lines = _wrapped_lines(label, COL_W * 0.62, T_BODY)
         h = lines * 0.26 + 0.10
         if on:
-            _rect(slide, PAD_X - 0.18, cur - 0.05, COL_W * 0.72, h + 0.14,
-                  PANEL)
+            _rect(slide, PAD_X - 0.18, cur - 0.05, COL_W * 0.72, h + 0.14, PANEL)
             _rect(slide, PAD_X - 0.18, cur - 0.05, 0.032, h + 0.14, ACCENT)
         tf = _txt(slide, PAD_X, cur, 0.6, 0.35)
         p = _para(tf, True)
@@ -571,8 +556,7 @@ def _agenda(slide, s):
         _run(p, label, FONT_BODY, T_BODY, INK, bold=on)
         sub = (it.get("sub") or "").strip()
         if sub:
-            tf = _txt(slide, PAD_X + 0.72 + COL_W * 0.62, cur - 0.01,
-                      COL_W * 0.30, h)
+            tf = _txt(slide, PAD_X + 0.72 + COL_W * 0.62, cur - 0.01, COL_W * 0.30, h)
             p = _para(tf, True)
             _run(p, sub, FONT_BODY, T_SMALL, MUTED)
         cur += h + 0.20
@@ -594,8 +578,7 @@ def _quote(slide, s):
     if attribution:
         tf = _txt(slide, PAD_X + 0.42, top + block_h + 0.34, COL_W * 0.7, 0.4)
         p = _para(tf, True)
-        _run(p, attribution, FONT_MONO, T_EYEBROW, MUTED, upper=True,
-             track=TRACK_MICRO)
+        _run(p, attribution, FONT_MONO, T_EYEBROW, MUTED, upper=True, track=TRACK_MICRO)
 
 
 def _callout(slide, s):
@@ -612,8 +595,7 @@ def _callout(slide, s):
     pt = _fit(heading, hw, T_H1, 26.0, 2)
     head_h = _display_block(heading, hw, pt)
     lede_w = COL_W * 0.72
-    lede_h = (_wrapped_lines(lede, lede_w, T_BODY) * (T_BODY * 1.42) / 72.0
-              if lede else 0.0)
+    lede_h = _wrapped_lines(lede, lede_w, T_BODY) * (T_BODY * 1.42) / 72.0 if lede else 0.0
     gap = 0.30 if lede else 0.0
     panel_h = min(pad * 2 + head_h + gap + lede_h, Y_FOOT - 0.30 - top)
     _rect(slide, PAD_X, top, COL_W, panel_h, PANEL)
@@ -622,8 +604,7 @@ def _callout(slide, s):
     p = _para(tf, True)
     _run(p, heading, FONT_DISPLAY, pt, INK, bold=True)
     if lede:
-        tf = _txt(slide, PAD_X + 0.55, top + pad + head_h + gap, lede_w,
-                  lede_h + 0.2)
+        tf = _txt(slide, PAD_X + 0.55, top + pad + head_h + gap, lede_w, lede_h + 0.2)
         p = _para(tf, True)
         _run(p, lede, FONT_BODY, T_BODY, MUTED)
     _foot(slide, s)
@@ -642,20 +623,22 @@ def _chart(slide, s):
     cur = body + 0.12
     for i, d in enumerate(data):
         on = i == highlight
-        tf = _txt(slide, PAD_X, cur + 0.02, label_w - 0.25, row_h,
-                  MSO_ANCHOR.MIDDLE)
+        tf = _txt(slide, PAD_X, cur + 0.02, label_w - 0.25, row_h, MSO_ANCHOR.MIDDLE)
         p = _para(tf, True)
-        _run(p, d.get("label", ""), FONT_BODY, T_SMALL, INK if on else MUTED,
-             bold=on)
+        _run(p, d.get("label", ""), FONT_BODY, T_SMALL, INK if on else MUTED, bold=on)
         frac = max(float(d.get("value", 0)) / float(top), 0.0)
         bar_h = row_h * 0.44
-        _rect(slide, PAD_X + label_w, cur + (row_h - bar_h) / 2, track_w, bar_h,
-              LINE)
+        _rect(slide, PAD_X + label_w, cur + (row_h - bar_h) / 2, track_w, bar_h, LINE)
         if frac > 0:
-            _rect(slide, PAD_X + label_w, cur + (row_h - bar_h) / 2,
-                  max(track_w * frac, 0.02), bar_h, ACCENT if on else "AEB2B6")
-        tf = _txt(slide, PAD_X + label_w + track_w + 0.18, cur + 0.02, 1.3,
-                  row_h, MSO_ANCHOR.MIDDLE)
+            _rect(
+                slide,
+                PAD_X + label_w,
+                cur + (row_h - bar_h) / 2,
+                max(track_w * frac, 0.02),
+                bar_h,
+                ACCENT if on else "AEB2B6",
+            )
+        tf = _txt(slide, PAD_X + label_w + track_w + 0.18, cur + 0.02, 1.3, row_h, MSO_ANCHOR.MIDDLE)
         p = _para(tf, True)
         val = d.get("value", 0)
         shown = f"{val:g}{unit}" if unit else f"{val:g}"
@@ -684,13 +667,11 @@ def _scorecard(slide, s):
         x = PAD_X + COL_W * 0.48
         for k in range(3):
             filled = k < level
-            _rect(slide, x, cur + row_h / 2 - 0.07, chip_w, 0.14,
-                  ACCENT if filled else LINE)
+            _rect(slide, x, cur + row_h / 2 - 0.07, chip_w, 0.14, ACCENT if filled else LINE)
             x += chip_w + chip_gap
         note = (row.get("note") or "").strip()
         if note:
-            tf = _txt(slide, PAD_X + COL_W * 0.62, cur, COL_W * 0.38, row_h,
-                      MSO_ANCHOR.MIDDLE)
+            tf = _txt(slide, PAD_X + COL_W * 0.62, cur, COL_W * 0.38, row_h, MSO_ANCHOR.MIDDLE)
             p = _para(tf, True)
             _run(p, note, FONT_BODY, T_SMALL, MUTED)
         _rect(slide, PAD_X, cur + row_h - 0.02, COL_W, 0.008, LINE)
@@ -699,11 +680,20 @@ def _scorecard(slide, s):
 
 
 WRITERS = {
-    "cover": _cover, "closing": _closing, "divider": _divider,
-    "full_bleed": _full_bleed, "content": _content,
-    "content_stat": _content_stat, "data": _data, "two_column": _two_column,
-    "process": _process, "agenda": _agenda, "quote": _quote,
-    "callout": _callout, "chart": _chart, "scorecard": _scorecard,
+    "cover": _cover,
+    "closing": _closing,
+    "divider": _divider,
+    "full_bleed": _full_bleed,
+    "content": _content,
+    "content_stat": _content_stat,
+    "data": _data,
+    "two_column": _two_column,
+    "process": _process,
+    "agenda": _agenda,
+    "quote": _quote,
+    "callout": _callout,
+    "chart": _chart,
+    "scorecard": _scorecard,
 }
 
 THEMES = ("studio",)

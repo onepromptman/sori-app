@@ -37,11 +37,13 @@ The JS bridge (class Api) is the only surface the UI touches. Every method
 returns {"ok": True, "data": ...} or {"ok": False, "error": "..."} — the UI
 never sees an exception, and a dead network degrades to an error string.
 """
+
 from __future__ import annotations
 
 import argparse
 import itertools
 import json
+import logging
 import os
 import queue
 import re
@@ -49,15 +51,17 @@ import sys
 import tempfile
 import threading
 import time
-import traceback
 import xml.etree.ElementTree as ET
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 
+import sori_log
 import transcribe as tx
 import training as tr
+
+log = logging.getLogger(__name__)
 
 APP_NAME = "Sori"
 YT_NS = {
@@ -80,6 +84,7 @@ FEED_WORKERS = 4
 # ---------------------------------------------------------------------------
 # Paths
 # ---------------------------------------------------------------------------
+
 
 def state_dir() -> Path:
     """Root of all app state. SORI_HOME overrides (used by tests).
@@ -168,7 +173,7 @@ def _safe_name(text: str, limit: int = 90) -> str:
     """Filename-safe on Windows: strip <>:"/\\|?* and trailing dots/spaces."""
     cleaned = re.sub(r'[<>:"/\\|?*\x00-\x1f]', "", text or "").strip()
     cleaned = re.sub(r"\s+", " ", cleaned).rstrip(". ")
-    return (cleaned[:limit].rstrip(". ") or "untitled")
+    return cleaned[:limit].rstrip(". ") or "untitled"
 
 
 # ---------------------------------------------------------------------------
@@ -178,15 +183,31 @@ def _safe_name(text: str, limit: int = 90) -> str:
 _store_lock = threading.RLock()
 
 # "studio" is the one deck theme every checkout has (themes/studio.py).
-DEFAULT_SETTINGS = {"model": "base.en", "device": "cpu", "lang": "en", "transcripts_dir": None,
-                     "deck_theme": "studio"}
+DEFAULT_SETTINGS = {
+    "model": "base.en",
+    "device": "cpu",
+    "lang": "en",
+    "transcripts_dir": None,
+    "deck_theme": "studio",
+}
 # Every store has this bucket; shows never point at nothing.
 UNSORTED_FOLDER = {"id": "unsorted", "name": "Unsorted"}
 
 
+def _new_id(prefix: str, taken) -> str:
+    """A millisecond-clock id that is not already in `taken`.
+
+    Two adds inside the same millisecond (a script, or the tests) used to get
+    the same id, so removing one removed or hid the other.
+    """
+    n = int(datetime.now().timestamp() * 1000)
+    while f"{prefix}{n:x}" in taken:
+        n += 1
+    return f"{prefix}{n:x}"
+
+
 def _fresh_store() -> dict:
-    return {"version": 2, "settings": dict(DEFAULT_SETTINGS), "shows": [],
-            "folders": [dict(UNSORTED_FOLDER)]}
+    return {"version": 2, "settings": dict(DEFAULT_SETTINGS), "shows": [], "folders": [dict(UNSORTED_FOLDER)]}
 
 
 def load_store() -> dict:
@@ -251,9 +272,11 @@ def _same_show_name(a: str, b: str) -> bool:
     plain prefix rule would also flag "The Daily" against "The Daily Show",
     which are different shows, so this deliberately stays narrow.
     """
+
     def core(s: str) -> str:
         head = re.split(r"\s*[:|—–]\s*|\s+-\s+", s or "", maxsplit=1)[0]
         return re.sub(r"[^a-z0-9]+", " ", head.lower()).strip()
+
     x, y = core(a), core(b)
     return bool(x) and x == y
 
@@ -331,6 +354,7 @@ def _clear_failure(show_id: str, episode_id: str) -> None:
 # ---------------------------------------------------------------------------
 # Feed resolution + parsing
 # ---------------------------------------------------------------------------
+
 
 def _yt_channel_feed(channel_id: str) -> str:
     return f"https://www.youtube.com/feeds/videos.xml?channel_id={channel_id}"
@@ -422,13 +446,15 @@ def parse_feed(feed_url: str, kind: str) -> tuple[str, list[dict]]:
             pub_el = entry.find("atom:published", YT_NS)
             if vid_el is None or not vid_el.text:
                 continue
-            episodes.append({
-                "id": vid_el.text.strip(),
-                "title": (title_el.text or "").strip() if title_el is not None else "",
-                "url": f"https://www.youtube.com/watch?v={vid_el.text.strip()}",
-                "date": _iso_date(pub_el.text if pub_el is not None else ""),
-                "kind": "youtube",
-            })
+            episodes.append(
+                {
+                    "id": vid_el.text.strip(),
+                    "title": (title_el.text or "").strip() if title_el is not None else "",
+                    "url": f"https://www.youtube.com/watch?v={vid_el.text.strip()}",
+                    "date": _iso_date(pub_el.text if pub_el is not None else ""),
+                    "kind": "youtube",
+                }
+            )
         return name, episodes
 
     title_el = root.find("./channel/title")
@@ -471,6 +497,7 @@ def new_episodes_for(show: dict) -> list[dict]:
 # Transcription
 # ---------------------------------------------------------------------------
 
+
 class TranscriptionError(Exception):
     """A transcription that failed for a reportable reason (no captions, 404...)."""
 
@@ -487,6 +514,7 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
     Raises TranscriptionError on a clean failure, tx.TranscriptionCancelled if
     `cancel` is set mid-run.
     """
+
     def report(stage: str, fraction=None):
         if on_progress:
             on_progress(stage, fraction)
@@ -510,7 +538,8 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
         cap_lang = settings.get("lang", "en")
         try:
             segments = tx.fetch_youtube_caption_segments(
-                episode["url"], cap_lang if cap_lang != "auto" else "en",
+                episode["url"],
+                cap_lang if cap_lang != "auto" else "en",
             )
         except ImportError as exc:
             raise TranscriptionError("yt-dlp isn't installed, so captions can't be fetched.") from exc
@@ -531,7 +560,8 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
             report("downloading", 0.0)
             try:
                 audio = tx._download_audio(
-                    episode["url"], Path(tmp),
+                    episode["url"],
+                    Path(tmp),
                     on_progress=lambda f: report("downloading", f),
                     cancel=cancel,
                 )
@@ -559,9 +589,12 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
             report("transcribing", 0.0)
             try:
                 segments, duration = tx._transcribe_whisper_segments(
-                    audio, model_name, device,
+                    audio,
+                    model_name,
+                    device,
                     on_progress=lambda f: report("transcribing", f),
-                    cancel=cancel, language=language,
+                    cancel=cancel,
+                    language=language,
                 )
             except tx.TranscriptionCancelled:
                 raise
@@ -588,7 +621,8 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
         "segments": segments,
     }
     out.with_suffix(".json").write_text(
-        json.dumps(sidecar, ensure_ascii=False, indent=None), encoding="utf-8",
+        json.dumps(sidecar, ensure_ascii=False, indent=None),
+        encoding="utf-8",
     )
     report("done", 1.0)
     return out
@@ -602,6 +636,7 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
 # which needs a key (Settings) and costs money per run. Whisper only converts
 # speech to text; writing a training deck is a language-model job the app
 # had nowhere else to do it. See README.md for the honest trade-off.
+
 
 class TrainingError(Exception):
     """A training generation that failed for a reportable reason (no API
@@ -617,14 +652,16 @@ def training_paths_for(show_name: str, episode: dict) -> tuple[Path, Path]:
     return base.with_name(base.name + ".pptx"), base.with_name(base.name + ".md")
 
 
-def run_training(show: dict, episode: dict, transcript_path: Path, settings: dict,
-                  on_progress=None, cancel=None) -> tuple[Path, Path]:
+def run_training(
+    show: dict, episode: dict, transcript_path: Path, settings: dict, on_progress=None, cancel=None
+) -> tuple[Path, Path]:
     """Produce one `.pptx` deck + one `.md` study guide from an existing transcript.
 
     Raises TrainingError on a clean failure, tx.TranscriptionCancelled if
     `cancel` is set mid-run (same cancel primitive as transcription — one
     cooperative-cancel contract across both job types).
     """
+
     def report(stage: str, fraction=None):
         if on_progress:
             on_progress(stage, fraction)
@@ -653,8 +690,10 @@ def run_training(show: dict, episode: dict, transcript_path: Path, settings: dic
         raise TrainingError(f"Deck rendering is unavailable: {exc}") from exc
     theme = settings.get("deck_theme") or deck_render.DEFAULT_THEME
     if theme not in deck_render.THEMES:
-        raise TrainingError(f"Deck theme {theme!r} isn't available in this build; "
-                            f"pick one in Settings ({', '.join(deck_render.THEMES)}).")
+        raise TrainingError(
+            f"Deck theme {theme!r} isn't available in this build; "
+            f"pick one in Settings ({', '.join(deck_render.THEMES)})."
+        )
 
     check_cancel()
     report("writing", None)
@@ -662,8 +701,7 @@ def run_training(show: dict, episode: dict, transcript_path: Path, settings: dic
     try:
         result = tr.generate_training(
             transcript_text=transcript_text,
-            meta={"title": episode.get("title", ""), "show": show["name"],
-                  "date": episode.get("date", "")},
+            meta={"title": episode.get("title", ""), "show": show["name"], "date": episode.get("date", "")},
             api_key=api_key,
         )
     except tr.TrainingGenerationError as exc:
@@ -730,8 +768,15 @@ class TrainWorker:
                 return "already queued"
             self._queued.add(eid)
             self._states[eid] = {"id": eid}
-        self._set(eid, status="queued", progress=None, title=episode.get("title"),
-                  show_id=show["id"], show_name=show.get("name"), error=None)
+        self._set(
+            eid,
+            status="queued",
+            progress=None,
+            title=episode.get("title"),
+            show_id=show["id"],
+            show_name=show.get("name"),
+            error=None,
+        )
         self._q.put((show, episode, transcript_path, settings))
         self.start()
         return "queued"
@@ -767,21 +812,32 @@ class TrainWorker:
             with self._lock:
                 self._running = eid
             try:
+
                 def report(stage, frac=None):
                     self._set(eid, status=stage, progress=frac)
 
                 pptx_path, md_path = run_training(
-                    show, episode, transcript_path, settings,
-                    on_progress=report, cancel=event,
+                    show,
+                    episode,
+                    transcript_path,
+                    settings,
+                    on_progress=report,
+                    cancel=event,
                 )
-                self._set(eid, status="done", progress=1.0,
-                          pptx_path=str(pptx_path), md_path=str(md_path), error=None)
+                self._set(
+                    eid,
+                    status="done",
+                    progress=1.0,
+                    pptx_path=str(pptx_path),
+                    md_path=str(md_path),
+                    error=None,
+                )
             except tx.TranscriptionCancelled:
                 self._set(eid, status="cancelled", progress=None, error=None)
             except Exception as exc:
                 message = str(exc) if isinstance(exc, TrainingError) else f"Unexpected error: {exc}"
                 if not isinstance(exc, TrainingError):
-                    traceback.print_exc()
+                    log.exception("training %s failed unexpectedly", sori_log.source(eid))
                 self._set(eid, status="failed", progress=None, error=message)
             finally:
                 with self._lock:
@@ -799,6 +855,7 @@ class TrainWorker:
 # ---------------------------------------------------------------------------
 # Worker — one episode at a time, in the background
 # ---------------------------------------------------------------------------
+
 
 class Worker:
     """Serial transcription queue. One job at a time keeps CPU sane on laptops."""
@@ -855,8 +912,7 @@ class Worker:
         def report(stage: str, frac=None) -> None:
             now = time.monotonic()
             moved = frac is not None and (frac - last["frac"]) >= 0.01
-            if (stage != last["stage"] or frac is None or frac >= 1.0
-                    or (moved and now - last["t"] >= 0.25)):
+            if stage != last["stage"] or frac is None or frac >= 1.0 or (moved and now - last["t"] >= 0.25):
                 last["t"] = now
                 last["stage"] = stage
                 if frac is not None:
@@ -865,8 +921,7 @@ class Worker:
 
         return report
 
-    def submit(self, show: dict, episode: dict, settings: dict,
-               priority: int = PRIORITY_AUTO) -> str:
+    def submit(self, show: dict, episode: dict, settings: dict, priority: int = PRIORITY_AUTO) -> str:
         eid = episode["id"]
         with self._lock:
             # Re-arm the cancel event FIRST: if a prior cancel is still
@@ -889,9 +944,17 @@ class Worker:
         # Carry enough of the episode in the snapshot that the UI can render
         # (and re-queue) a row for a job whose episode left the feed window —
         # local file imports have no feed row at all.
-        self._set(eid, status="queued", progress=None, title=episode.get("title"),
-                  show_id=show["id"], show_name=show.get("name"),
-                  url=episode.get("url"), kind=episode.get("kind"), error=None)
+        self._set(
+            eid,
+            status="queued",
+            progress=None,
+            title=episode.get("title"),
+            show_id=show["id"],
+            show_name=show.get("name"),
+            url=episode.get("url"),
+            kind=episode.get("kind"),
+            error=None,
+        )
         self._q.put((priority, next(self._seq), (show, episode, settings)))
         self.start()
         return "queued"
@@ -977,16 +1040,22 @@ class Worker:
                 self._running = eid
             try:
                 path = run_transcription(
-                    show, episode, settings, on_progress=self._reporter(eid), cancel=event,
+                    show,
+                    episode,
+                    settings,
+                    on_progress=self._reporter(eid),
+                    cancel=event,
                 )
-                self._set(eid, status="done", progress=1.0, path=str(path), error=None,
-                          attempts=0, retries_left=0)
+                self._set(
+                    eid, status="done", progress=1.0, path=str(path), error=None, attempts=0, retries_left=0
+                )
                 _mark_seen(show["id"], eid)
                 if self._on_transcribed is not None:
                     try:
                         self._on_transcribed(show, episode, path)
                     except Exception:
-                        traceback.print_exc()  # auto-train must never take down transcription
+                        # auto-train must never take down transcription
+                        log.exception("auto-train hook failed for %s", sori_log.source(eid))
             except tx.TranscriptionCancelled:
                 if not self._drop_if_dismissed(eid):
                     self._set(eid, status="cancelled", progress=None, error=None, cancelling=False)
@@ -995,11 +1064,16 @@ class Worker:
                     message = str(exc)
                 else:  # pragma: no cover - last-resort net
                     message = f"Unexpected error: {exc}"
-                    traceback.print_exc()
+                    log.exception("transcription %s failed unexpectedly", sori_log.source(eid))
                 attempts = _record_failure(show["id"], eid, message)
-                self._set(eid, status="failed", progress=None, error=message,
-                          attempts=attempts,
-                          retries_left=max(MAX_ATTEMPTS - attempts, 0))
+                self._set(
+                    eid,
+                    status="failed",
+                    progress=None,
+                    error=message,
+                    attempts=attempts,
+                    retries_left=max(MAX_ATTEMPTS - attempts, 0),
+                )
             finally:
                 with self._lock:
                     self._queued.discard(eid)
@@ -1023,14 +1097,17 @@ class Worker:
 # Bridge API — everything the UI can call
 # ---------------------------------------------------------------------------
 
+
 def bridge(func):
     """Wrap a bridge method so the UI always gets {ok, data|error}, never a throw."""
+
     def wrapper(*args, **kwargs):
         try:
             return {"ok": True, "data": func(*args, **kwargs)}
         except Exception as exc:
-            traceback.print_exc()
+            log.exception("bridge call %s failed", func.__name__)
             return {"ok": False, "error": str(exc) or exc.__class__.__name__}
+
     wrapper.__name__ = func.__name__
     wrapper.__doc__ = func.__doc__
     return wrapper
@@ -1178,9 +1255,20 @@ class Api:
     @bridge
     def list_shows(self) -> list[dict]:
         return [
-            {k: s.get(k) for k in
-             ("id", "name", "type", "feed_url", "auto", "auto_train", "added_at",
-              "last_checked", "folder")}
+            {
+                k: s.get(k)
+                for k in (
+                    "id",
+                    "name",
+                    "type",
+                    "feed_url",
+                    "auto",
+                    "auto_train",
+                    "added_at",
+                    "last_checked",
+                    "folder",
+                )
+            }
             for s in load_store()["shows"]
         ]
 
@@ -1219,9 +1307,13 @@ class Api:
         # rather than refuse — "The Daily" and "The Daily Show" are different.
         twin = next((s for s in load_store()["shows"] if _same_show_name(s["name"], name)), None)
         warning = (
-            f"You already follow \u201c{twin['name']}\u201d as {twin['type']}. Following the same "
-            "show twice gives you every episode twice \u2014 remove one with the \u00d7 in the list."
-        ) if twin else None
+            (
+                f"You already follow \u201c{twin['name']}\u201d as {twin['type']}. Following the same "
+                "show twice gives you every episode twice \u2014 remove one with the \u00d7 in the list."
+            )
+            if twin
+            else None
+        )
 
         # parse_feed is a network call; keep it outside the lock. Take the
         # lock only for the read-modify-write, and re-read + re-check the
@@ -1237,7 +1329,7 @@ class Api:
             # subscription surfaces exactly one thing to try rather than a backlog.
             seen = [e["id"] for e in episodes[1:FEED_WINDOW]]
             show = {
-                "id": f"s{int(datetime.now().timestamp() * 1000):x}",
+                "id": _new_id("s", {s["id"] for s in data["shows"]}),
                 "name": name,
                 "type": kind,
                 "feed_url": feed_url,
@@ -1251,8 +1343,15 @@ class Api:
             }
             data["shows"].append(show)
             save_store(data)
-        out = {"id": show["id"], "name": name, "type": kind, "feed_url": feed_url,
-               "auto": False, "added_at": show["added_at"], "folder": "unsorted"}
+        out = {
+            "id": show["id"],
+            "name": name,
+            "type": kind,
+            "feed_url": feed_url,
+            "auto": False,
+            "added_at": show["added_at"],
+            "folder": "unsorted",
+        }
         if warning:
             out["warning"] = warning
         return out
@@ -1311,7 +1410,7 @@ class Api:
             data = load_store()
             if any(f["name"].strip().lower() == name.lower() for f in data["folders"]):
                 raise ValueError("A folder with that name already exists.")
-            folder = {"id": f"f{int(datetime.now().timestamp() * 1000):x}", "name": name}
+            folder = {"id": _new_id("f", {f["id"] for f in data["folders"]}), "name": name}
             data["folders"].append(folder)
             save_store(data)
         return folder
@@ -1326,8 +1425,9 @@ class Api:
             folder = next((f for f in data["folders"] if f["id"] == folder_id), None)
             if not folder:
                 raise ValueError("That folder doesn't exist.")
-            if any(f["id"] != folder_id and f["name"].strip().lower() == name.lower()
-                   for f in data["folders"]):
+            if any(
+                f["id"] != folder_id and f["name"].strip().lower() == name.lower() for f in data["folders"]
+            ):
                 raise ValueError("A folder with that name already exists.")
             folder["name"] = name  # "unsorted" may be renamed — its id never changes
             save_store(data)
@@ -1439,6 +1539,7 @@ class Api:
     @bridge
     def get_training_settings(self) -> dict:
         import deck_render
+
         settings = load_store()["settings"]
         key = anthropic_api_key()
         return {
@@ -1453,6 +1554,7 @@ class Api:
         if not isinstance(patch, dict):
             raise ValueError("Settings update must be an object.")
         import deck_render
+
         unknown = set(patch) - {"deck_theme", "api_key"}
         if unknown:
             raise ValueError(f"Unknown setting(s): {', '.join(sorted(unknown))}")
@@ -1476,6 +1578,7 @@ class Api:
     @bridge
     def choose_folder(self) -> dict:
         import webview
+
         res = self._window.create_file_dialog(webview.FOLDER_DIALOG)
         if not res:
             return {"changed": False, "transcripts_dir": str(transcripts_dir())}
@@ -1488,14 +1591,20 @@ class Api:
             data = load_store()
             data["settings"]["transcripts_dir"] = str(res[0])
             save_store(data)
-        return {"changed": True, "transcripts_dir": str(res[0]),
-                "previous": str(old_dir), "orphaned": orphaned}
+        return {
+            "changed": True,
+            "transcripts_dir": str(res[0]),
+            "previous": str(old_dir),
+            "orphaned": orphaned,
+        }
 
     @bridge
     def choose_files(self) -> dict:
         import webview
+
         res = self._window.create_file_dialog(
-            webview.OPEN_DIALOG, allow_multiple=True,
+            webview.OPEN_DIALOG,
+            allow_multiple=True,
             file_types=("Audio and video (*.mp3;*.m4a;*.wav;*.mp4)", "All files (*.*)"),
         )
         if not res:
@@ -1506,8 +1615,7 @@ class Api:
         queued = []
         for p in res:
             episode = {"id": p, "title": Path(p).stem, "url": p, "kind": "mp3", "date": today}
-            self._worker.submit(show, episode, data["settings"],
-                                priority=Worker.PRIORITY_MANUAL)
+            self._worker.submit(show, episode, data["settings"], priority=Worker.PRIORITY_MANUAL)
             queued.append(episode["id"])
         return {"queued": queued}
 
@@ -1536,8 +1644,7 @@ class Api:
         episode.setdefault("id", episode["url"])
         if reset:
             _clear_failure(show_id, episode["id"])
-        status = self._worker.submit(show, episode, data["settings"],
-                                     priority=Worker.PRIORITY_MANUAL)
+        status = self._worker.submit(show, episode, data["settings"], priority=Worker.PRIORITY_MANUAL)
         return {"id": episode["id"], "status": status}
 
     @bridge
@@ -1584,8 +1691,12 @@ class Api:
         data = _read_transcript_data(target)
         meta = data.get("meta", {})
         show_name = meta.get("show") or "Unsorted"
-        episode = {"id": target.stem, "title": meta.get("title") or target.stem,
-                   "date": meta.get("date", ""), "url": meta.get("url", "")}
+        episode = {
+            "id": target.stem,
+            "title": meta.get("title") or target.stem,
+            "date": meta.get("date", ""),
+            "url": meta.get("url", ""),
+        }
         show = {"id": "t:" + _safe_name(show_name, 60), "name": show_name}
         status = self._trainer.submit(show, episode, target, load_store()["settings"])
         return {"id": episode["id"], "status": status}
@@ -1696,12 +1807,16 @@ class Api:
                     snippet = "…" + snippet
                 if end < len(text):
                     snippet = snippet + "…"
-                out.append({
-                    "path": str(f), "show": show_folder.name, "title": f.stem,
-                    "kb": round(stat.st_size / 1024, 1),
-                    "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d"),
-                    "snippet": snippet,
-                })
+                out.append(
+                    {
+                        "path": str(f),
+                        "show": show_folder.name,
+                        "title": f.stem,
+                        "kb": round(stat.st_size / 1024, 1),
+                        "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d"),
+                        "snippet": snippet,
+                    }
+                )
         return {"results": out, "truncated": False}
 
     @bridge
@@ -1723,7 +1838,7 @@ class Api:
                     self._emit("checked", result)
                     self._auto_queue(result["episodes"])
                 except Exception:
-                    traceback.print_exc()
+                    log.exception("background check failed")
                 self._stop.wait(interval_seconds)
 
         threading.Thread(target=loop, name="poller", daemon=True).start()
@@ -1745,12 +1860,14 @@ def _open_in_explorer(target: Path) -> None:
         os.startfile(str(target))  # noqa: S606 - Windows shell open, no user input in argv
     else:  # pragma: no cover - dev convenience on non-Windows
         import subprocess
+
         subprocess.run(["xdg-open", str(target)], check=False)
 
 
 # ---------------------------------------------------------------------------
 # Shared operations (used by both the window and --sweep)
 # ---------------------------------------------------------------------------
+
 
 def check_all() -> dict:
     """Poll every show. Never raises — per-show failures come back as errors."""
@@ -1784,8 +1901,7 @@ def check_all() -> dict:
         save_store(fresh)
 
     found.sort(key=lambda e: e.get("date", ""), reverse=True)
-    return {"episodes": found, "errors": errors, "checked_at": now,
-            "show_count": len(data["shows"])}
+    return {"episodes": found, "errors": errors, "checked_at": now, "show_count": len(data["shows"])}
 
 
 def list_transcripts() -> list[dict]:
@@ -1799,13 +1915,15 @@ def list_transcripts() -> list[dict]:
                 stat = f.stat()
             except OSError:
                 continue
-            out.append({
-                "show": show_folder.name,
-                "title": f.stem,
-                "path": str(f),
-                "kb": round(stat.st_size / 1024, 1),
-                "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d"),
-            })
+            out.append(
+                {
+                    "show": show_folder.name,
+                    "title": f.stem,
+                    "path": str(f),
+                    "kb": round(stat.st_size / 1024, 1),
+                    "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d"),
+                }
+            )
     return out
 
 
@@ -1823,20 +1941,23 @@ def list_trainings() -> list[dict]:
             except OSError:
                 continue
             md = f.with_suffix(".md")
-            out.append({
-                "show": show_folder.name,
-                "title": f.stem,
-                "pptx_path": str(f),
-                "md_path": str(md) if md.exists() else None,
-                "kb": round(stat.st_size / 1024, 1),
-                "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d"),
-            })
+            out.append(
+                {
+                    "show": show_folder.name,
+                    "title": f.stem,
+                    "pptx_path": str(f),
+                    "md_path": str(md) if md.exists() else None,
+                    "kb": round(stat.st_size / 1024, 1),
+                    "modified": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d"),
+                }
+            )
     return out
 
 
 # ---------------------------------------------------------------------------
 # Headless sweep
 # ---------------------------------------------------------------------------
+
 
 def sweep() -> int:
     """Check every show, transcribe new episodes for auto shows, report, exit."""
@@ -1904,8 +2025,11 @@ def sweep() -> int:
             attempts = _record_failure(show["id"], ep["id"], message)
             left = max(MAX_ATTEMPTS - attempts, 0)
             failed += 1
-            tail = (f" (will try again next sweep, {left} left)" if left
-                    else " (giving up — use Retry in the app)")
+            tail = (
+                f" (will try again next sweep, {left} left)"
+                if left
+                else " (giving up — use Retry in the app)"
+            )
             say(f"    failed: {message}{tail}")
             continue
 
@@ -1921,8 +2045,10 @@ def sweep() -> int:
                 say(f"    training failed: {message}")
 
     elapsed = (datetime.now() - started).total_seconds()
-    say(f"Done in {elapsed:.1f}s — {done} transcribed, {failed} failed, {skipped} skipped, "
-        f"{trained} trained, {train_failed} training failed.")
+    say(
+        f"Done in {elapsed:.1f}s — {done} transcribed, {failed} failed, {skipped} skipped, "
+        f"{trained} trained, {train_failed} training failed."
+    )
     _append_log(log_path, lines)
     return 0
 
@@ -1936,8 +2062,10 @@ def selftest() -> int:
     lines = [f"=== {APP_NAME} self-test — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ==="]
     lines.append(f"frozen: {bool(getattr(sys, 'frozen', False))}  python: {sys.version.split()[0]}")
     lines.append(f"state dir: {state_dir()}")
-    lines.append(f"ui: {app_dir() / 'ui' / 'index.html'} "
-                 f"({'found' if (app_dir() / 'ui' / 'index.html').exists() else 'MISSING'})")
+    lines.append(
+        f"ui: {app_dir() / 'ui' / 'index.html'} "
+        f"({'found' if (app_dir() / 'ui' / 'index.html').exists() else 'MISSING'})"
+    )
 
     checks = [
         ("yt_dlp", "YouTube captions"),
@@ -1970,10 +2098,14 @@ def selftest() -> int:
     # its absence is reported, never counted as a failure.
     try:
         import deck_render
+
         themes = ", ".join(deck_render.THEMES)
         if deck_render.deckgen is not None:
-            n = (len(list(deck_render.install_fonts.FONTS_DIR.glob("*.ttf")))
-                 if deck_render.install_fonts is not None else 0)
+            n = (
+                len(list(deck_render.install_fonts.FONTS_DIR.glob("*.ttf")))
+                if deck_render.install_fonts is not None
+                else 0
+            )
             detail = f"engine present, {n} font(s) bundled, themes: {themes}"
         else:
             detail = f"no engine, themes: {themes}"
@@ -2004,6 +2136,7 @@ def _append_log(path: Path, lines: list[str]) -> None:
 # Window
 # ---------------------------------------------------------------------------
 
+
 def run_window() -> int:
     import webview
 
@@ -2033,8 +2166,9 @@ def run_window() -> int:
         api._trainer.start()
         api._start_poller(3600)
 
-    webview.start(on_start, debug=bool(os.environ.get("SORI_DEBUG")
-                                        or os.environ.get("PODCAST_STUDIO_DEBUG")))
+    webview.start(
+        on_start, debug=bool(os.environ.get("SORI_DEBUG") or os.environ.get("PODCAST_STUDIO_DEBUG"))
+    )
     api._shutdown()
     return 0
 
@@ -2044,14 +2178,17 @@ def main(argv: list[str] | None = None) -> int:
         prog="app.py", description=f"{APP_NAME} — desktop app for podcast-transcriber."
     )
     parser.add_argument(
-        "--sweep", action="store_true",
+        "--sweep",
+        action="store_true",
         help="Headless: check every show, transcribe new episodes for auto shows, exit.",
     )
     parser.add_argument(
-        "--selftest", action="store_true",
+        "--selftest",
+        action="store_true",
         help="Check that every transcription backend imports, then exit.",
     )
     args = parser.parse_args(argv)
+    sori_log.setup(log_file=state_dir() / "sori.log")
     if args.selftest:
         return selftest()
     return sweep() if args.sweep else run_window()

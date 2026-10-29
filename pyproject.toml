@@ -1,5 +1,5 @@
 # Sori is a set of scripts, not an installable package: this file is the one
-# place the pins live (Bryan's stack default: exact pins, full closure in
+# place the pins live (the OnePromptMan stack default: exact pins, full closure in
 # requirements.lock). The requirements*.txt files stay as thin install lists
 # for the README's `pip install -r` routes.
 

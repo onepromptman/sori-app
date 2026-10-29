@@ -29,6 +29,7 @@ Transcripts written by Sori start with three header lines (title, "show —
 date", source URL); those are read for the deck metadata when --title/--show/
 --date are not given. Any other .txt works too, it just gets an empty header.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -38,6 +39,7 @@ import re
 import sys
 from pathlib import Path
 
+import sori_log
 import training as tr
 
 # Derived, not hardcoded: a checkout without the private engine/ offers only
@@ -74,16 +76,29 @@ def _safe(name: str, limit: int = 80) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="train.py",
-                                description="Transcript -> training deck (.pptx) + study guide (.md). Costs one Claude API call.")
+    sori_log.setup()
+    p = argparse.ArgumentParser(
+        prog="train.py",
+        description="Transcript -> training deck (.pptx) + study guide (.md). Costs one Claude API call.",
+    )
     p.add_argument("transcript", nargs="?", help="path to a transcript .txt")
-    p.add_argument("--outline", help="render this outline JSON (written by a Claude Code session "
-                                     "per --brief) instead of calling the Claude API; no key needed")
-    p.add_argument("--brief", action="store_true",
-                   help="print the authoring rules and outline schema for --outline, then exit")
+    p.add_argument(
+        "--outline",
+        help="render this outline JSON (written by a Claude Code session "
+        "per --brief) instead of calling the Claude API; no key needed",
+    )
+    p.add_argument(
+        "--brief",
+        action="store_true",
+        help="print the authoring rules and outline schema for --outline, then exit",
+    )
     p.add_argument("--out", help="output folder (default: next to the transcript)")
-    p.add_argument("--theme", choices=THEMES, default=deck_render.DEFAULT_THEME,
-                   help=f"deck theme (default: {deck_render.DEFAULT_THEME})")
+    p.add_argument(
+        "--theme",
+        choices=THEMES,
+        default=deck_render.DEFAULT_THEME,
+        help=f"deck theme (default: {deck_render.DEFAULT_THEME})",
+    )
     p.add_argument("--model", default=tr.DEFAULT_MODEL, help=f"Claude model (default: {tr.DEFAULT_MODEL})")
     p.add_argument("--title", help="override the transcript header title")
     p.add_argument("--show", help="override the show name")
@@ -94,9 +109,12 @@ def main(argv: list[str] | None = None) -> int:
     args, extras = p.parse_known_args(argv)
     if extras:
         shown = " ".join(a if a.startswith("-") else "<value>" for a in extras)
-        print(f"!! unrecognized arguments: {shown}\n"
-              "   (a key is never taken from the command line; set ANTHROPIC_API_KEY "
-              "or save one with `settings.py api-key set`)", file=sys.stderr)
+        print(
+            f"!! unrecognized arguments: {shown}\n"
+            "   (a key is never taken from the command line; set ANTHROPIC_API_KEY "
+            "or save one with `settings.py api-key set`)",
+            file=sys.stderr,
+        )
         return 2
 
     if args.brief:
@@ -126,11 +144,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f"!! couldn't read outline {args.outline}: {exc}", file=sys.stderr)
             return 2
 
-    key = None if outline_src is not None else (
-        os.environ.get("ANTHROPIC_API_KEY") or _sori_key())
+    key = None if outline_src is not None else (os.environ.get("ANTHROPIC_API_KEY") or _sori_key())
     if outline_src is None and not key:
-        print("!! no Claude API key: set ANTHROPIC_API_KEY, or save one with "
-              "`settings.py api-key set` (or Sori's Settings).", file=sys.stderr)
+        print(
+            "!! no Claude API key: set ANTHROPIC_API_KEY, or save one with "
+            "`settings.py api-key set` (or Sori's Settings).",
+            file=sys.stderr,
+        )
         return 2
 
     out_dir = Path(args.out) if args.out else src.parent

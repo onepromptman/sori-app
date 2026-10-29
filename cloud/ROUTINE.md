@@ -13,9 +13,9 @@ commits the results. No Whisper, no window, no PC that has to be on.
 
 **Status: not created.** Creating a routine is recurring and can spend
 money, so it is ask-first. This page is the exact spec so the creation is a
-copy-paste once Bryan says yes.
+copy-paste once the owner says yes.
 
-## What Bryan must confirm first
+## What the owner must confirm first
 
 1. **Decision 2 (destination).** Outputs go to a private GitHub repo
    `<owner>/sori-output`, one commit per run (recommended in the v3.2
@@ -28,7 +28,7 @@ copy-paste once Bryan says yes.
 3. **Repo access for the routine.** The routine reads this public repo (no
    token needed) and needs write (push) access to `sori-output`.
 
-## Prerequisites (one-time, by Bryan)
+## Prerequisites (one-time, by the owner)
 
 - `<owner>/sori-output` exists, private, with the layout in
   `cloud/README.md`: a `.gitignore` holding `state/credentials.json`,
@@ -85,7 +85,7 @@ health check.
 
 ## Procedure: dry run first, training disabled
 
-1. Bryan confirms items 1 to 3 above and creates `sori-output`.
+1. The owner confirms items 1 to 3 above and creates `sori-output`.
 2. Create the routine with the prompt above, the GitHub token as its only
    secret (no `ANTHROPIC_API_KEY`), and `state/shows.json` holding one
    YouTube channel with `auto: true`, `auto_train: false`.
@@ -111,13 +111,13 @@ health check.
   Any fallback must be gated to the cloud entrypoint (an explicit opt-in that
   only `sweep_cloud.sh` sets) rather than a bare `os.environ` read in
   `app.anthropic_api_key()`: that function also serves the desktop app's
-  scheduled `--sweep` over Bryan's real shows, and a bare read would let a
+  scheduled `--sweep` over the owner's real shows, and a bare read would let a
   stray shell `ANTHROPIC_API_KEY` turn on paid auto-train without a key ever
-  being entered in Settings. Which design lands is Bryan's call (spend).
+  being entered in Settings. Which design lands is the owner's call (spend).
 - **Unverified on Linux:** deck rendering has been run only on Windows
   (`deck_render.install_fonts` writes to the Windows user font folder).
   Expect the first paid run to be a fact-finding run; budget one call.
 - Then: add `ANTHROPIC_API_KEY` as a routine secret, flip one show to
-  `auto_train: true` in `state/shows.json`, get Bryan's yes for that single
+  `auto_train: true` in `state/shows.json`, get the owner's yes for that single
   run, trigger once, and confirm `1 trained` in the commit message plus a
   `.pptx` and `.md` under `state/Trainings/<Show>/`.

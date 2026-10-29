@@ -23,6 +23,7 @@ feed; a "you already follow this show" warning goes to stderr and is not a
 failure. Exit codes: 0 ok, 1 the engine refused (message on stderr, "!! "),
 2 usage.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -32,6 +33,7 @@ import json
 import sys
 
 import app
+import sori_log
 
 
 class CliError(Exception):
@@ -93,6 +95,7 @@ def _table(rows: list[list[str]], header: list[str]) -> None:
 
 # -- verbs ------------------------------------------------------------------
 
+
 def cmd_list(api: app.Api, args) -> int:
     shows = _call(api.list_shows)
     folders = {f["id"]: f["name"] for f in _call(api.list_folders)}
@@ -101,11 +104,21 @@ def cmd_list(api: app.Api, args) -> int:
         if not rows:
             print("no shows yet. add one: py shows.py add <feed url or YouTube channel>")
             return
-        _table([[s["id"], s["name"], s["type"], "on" if s["auto"] else "off",
-                 "on" if s.get("auto_train") else "off",
-                 folders.get(s.get("folder"), s.get("folder") or ""),
-                 (s.get("last_checked") or "never")[:19]] for s in rows],
-               ["id", "name", "type", "auto", "auto-train", "folder", "last checked"])
+        _table(
+            [
+                [
+                    s["id"],
+                    s["name"],
+                    s["type"],
+                    "on" if s["auto"] else "off",
+                    "on" if s.get("auto_train") else "off",
+                    folders.get(s.get("folder"), s.get("folder") or ""),
+                    (s.get("last_checked") or "never")[:19],
+                ]
+                for s in rows
+            ],
+            ["id", "name", "type", "auto", "auto-train", "folder", "last checked"],
+        )
 
     _emit(shows, args.json, human)
     return 0
@@ -161,8 +174,7 @@ def cmd_folder(api: app.Api, args) -> int:
         counts: dict[str, int] = {}
         for s in _call(api.list_shows):
             counts[s.get("folder")] = counts.get(s.get("folder"), 0) + 1
-        _table([[f["id"], f["name"], str(counts.get(f["id"], 0))] for f in folders],
-               ["id", "name", "shows"])
+        _table([[f["id"], f["name"], str(counts.get(f["id"], 0))] for f in folders], ["id", "name", "shows"])
         return 0
     if sub == "add":
         f = _call(api.add_folder, args.name)
@@ -208,9 +220,11 @@ def cmd_check(api: app.Api, args) -> int:
 
 # -- argparse ---------------------------------------------------------------
 
+
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="shows.py",
-                                description="Sori subscriptions from the shell (same store as the window).")
+    p = argparse.ArgumentParser(
+        prog="shows.py", description="Sori subscriptions from the shell (same store as the window)."
+    )
     sub = p.add_subparsers(dest="cmd", required=True)
 
     s = sub.add_parser("list", help="list subscriptions")
@@ -268,6 +282,7 @@ def _tolerant_streams() -> None:
 
 def main(argv: list[str] | None = None) -> int:
     _tolerant_streams()
+    sori_log.setup()
     try:
         args = build_parser().parse_args(argv)
     except SystemExit as exc:  # argparse: 2 on usage error, 0 on --help

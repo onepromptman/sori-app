@@ -1,7 +1,7 @@
 # cloud/ — the captions-only cloud sweep
 
 Everything Sori needs to run as a scheduled cloud routine (a Claude Code
-`/schedule` routine, see `ROUTINE.md`) instead of on Bryan's PC. The cloud
+`/schedule` routine, see `ROUTINE.md`) instead of on your own PC. The cloud
 runner has no GPU and no Whisper: it installs `requirements-captions.txt`,
 so only **YouTube shows** (captions via yt-dlp) can be swept there. With an
 `ANTHROPIC_API_KEY` it can also generate training decks for shows marked
@@ -11,7 +11,7 @@ auto-train (paid; see the spend gate in `ROUTINE.md`).
 |---|---|
 | `sweep_cloud.sh` | The one command the routine runs: guard, `app.py --sweep`, commit + push the output repo. `--dry-run` skips the push. |
 | `guard.py` | Exits 3 if any show in the cloud `shows.json` is not `type: youtube`. Dependency-free. |
-| `ROUTINE.md` | The routine prompt, secrets, schedule, dry-run procedure, and what Bryan must confirm first. |
+| `ROUTINE.md` | The routine prompt, secrets, schedule, dry-run procedure, and what the owner must confirm first. |
 
 Nothing in this folder creates the routine or the output repo. Both are
 ask-first.
@@ -19,7 +19,7 @@ ask-first.
 ## The output repo: `<owner>/sori-output` (private)
 
 **Decision 2 of the v3.2 handoff, recommended and not yet confirmed by
-Bryan.** The alternative was Google Drive via connector. Until he confirms,
+the owner.** The alternative was Google Drive via connector. Until it is confirmed,
 this layout is a proposal; the script works against any checkout path.
 
 `sweep_cloud.sh` sets `SORI_HOME=$SORI_OUTPUT_DIR/state`, and Sori keeps all
@@ -38,7 +38,7 @@ sori-output/
 
 Notes on that layout:
 
-- `state/shows.json` is **separate from Bryan's desktop `shows.json`**. It is
+- `state/shows.json` is **separate from your desktop `shows.json`**. It is
   the cloud's own subscription list; edit it with
   `SORI_HOME=/path/to/sori-output/state py shows.py add <youtube url> --auto`
   from a Sori checkout, commit, push. Only YouTube shows; `guard.py` refuses
@@ -77,8 +77,8 @@ the cloud the transcript half works now and the auto-train half needs a
 change in `app.py` before the first paid run. Any fallback must be gated to
 the cloud entrypoint (an explicit opt-in that only `sweep_cloud.sh` sets)
 rather than a bare `os.environ` read in `app.anthropic_api_key()`: that
-function also serves the desktop app's scheduled `--sweep` over Bryan's real
+function also serves the desktop app's scheduled `--sweep` over your real
 shows, and a bare read would let a stray shell `ANTHROPIC_API_KEY` turn on
 paid auto-train without a key ever being entered in Settings. Which design
-lands is Bryan's call (spend).
+lands is the owner's call (spend).
 The dry-run procedure in `ROUTINE.md` does not depend on it.

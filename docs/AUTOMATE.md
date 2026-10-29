@@ -73,7 +73,7 @@ are in [`cloud/ROUTINE.md`](../cloud/ROUTINE.md); the output layout is in
 [`cloud/README.md`](../cloud/README.md).
 
 What lands where: a private repo, proposed as `<owner>/sori-output`
-(handoff Decision 2, recommended, not yet confirmed by Bryan). Its
+(handoff Decision 2, recommended, not yet confirmed by the owner). Its
 `state/shows.json` is the cloud's own subscription list (YouTube channels
 only), and each run commits `state/Transcripts/...`, `state/sweep.log`, and
 any decks under `state/Trainings/`, with the message `sweep <UTC stamp>: N

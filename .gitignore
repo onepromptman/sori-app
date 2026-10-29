@@ -14,3 +14,6 @@ dist/
 
 # release artifacts built by Sori.spec (uploaded to GitHub Releases, not tracked)
 *.zip
+
+# local secrets: an ANTHROPIC_API_KEY belongs in Settings or the environment, never in git
+.env

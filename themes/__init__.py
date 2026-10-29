@@ -7,6 +7,7 @@ most checkouts.
 To write your own, copy `studio.py` and read `README.md` — the contract is a
 `THEMES` tuple plus `render(slides, pptx_path)`.
 """
+
 from . import studio
 
 __all__ = ["studio"]

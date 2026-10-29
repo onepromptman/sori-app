@@ -17,9 +17,13 @@ role. One call in (transcript text + episode metadata), one TrainingResult
 out; app.py's run_training() does the file writing (same split as
 transcribe.py / run_transcription()).
 """
+
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
+
+log = logging.getLogger(__name__)
 
 DEFAULT_MODEL = "claude-sonnet-5"
 
@@ -28,7 +32,7 @@ DEFAULT_MODEL = "claude-sonnet-5"
 # The original vocabulary excluded image/chart/data/scorecard/full_bleed
 # wholesale, on the grounds that they "need a real image or a precise numeric
 # series". That guard is right about the risk -- inventing numbers to fill a
-# stat slide is exactly the unsourced claim Bryan's other training-deck work
+# stat slide is exactly the unsourced claim OnePromptMan's other training-deck work
 # gates against -- but it over-applied to two of the five, so the rule is now
 # enforced per kind instead of by blanket exclusion:
 #
@@ -37,7 +41,7 @@ DEFAULT_MODEL = "claude-sonnet-5"
 #               against deckgen's <=3 "polychrome moment" budget, though, and
 #               cover+closing already spend two -- so at most ONE per deck
 #               (enforced in _validate_slide_data below).
-#   data        ADMITTED. Carries a hero_stat plus <=2 satellites: the same
+#   data        ADMITTED. Carries a hero_stat plus <=2 supporting stats: the same
 #               literal-number constraint content_stat already lives under,
 #               applied three times instead of once. Every num must appear in
 #               the transcript verbatim.
@@ -52,9 +56,20 @@ DEFAULT_MODEL = "claude-sonnet-5"
 #
 # cover/closing stay out because deck_render.py synthesizes those from
 # deck_title/subtitle/cta so every deck gets a consistent, on-brand bookend.
-SLIDE_KINDS = ["divider", "content", "content_stat", "two_column",
-               "process", "agenda", "quote", "callout",
-               "full_bleed", "data", "scorecard", "chart"]
+SLIDE_KINDS = [
+    "divider",
+    "content",
+    "content_stat",
+    "two_column",
+    "process",
+    "agenda",
+    "quote",
+    "callout",
+    "full_bleed",
+    "data",
+    "scorecard",
+    "chart",
+]
 
 # Kinds admitted above that carry a fabrication risk, and so get extra
 # structural validation in _validate_slide_data().
@@ -67,14 +82,12 @@ _POINT_SCHEMA = {
 }
 _PANE_SCHEMA = {
     "type": "object",
-    "properties": {"heading": {"type": "string"},
-                    "points": {"type": "array", "items": _POINT_SCHEMA}},
+    "properties": {"heading": {"type": "string"}, "points": {"type": "array", "items": _POINT_SCHEMA}},
 }
-# One satellite figure on a `data` slide -- same shape as hero_stat.
+# One supporting figure on a `data` slide -- same shape as hero_stat.
 _STAT_SCHEMA = {
     "type": "object",
-    "properties": {"num": {"type": "string"}, "label": {"type": "string"},
-                    "desc": {"type": "string"}},
+    "properties": {"num": {"type": "string"}, "label": {"type": "string"}, "desc": {"type": "string"}},
     "required": ["num"],
 }
 # One bar on a `chart` slide. `value` is numeric so the renderer can scale it;
@@ -87,9 +100,11 @@ _DATUM_SCHEMA = {
 # One row on a `scorecard`. `level` is the audience's own 0-3 rating.
 _ROW_SCHEMA = {
     "type": "object",
-    "properties": {"label": {"type": "string"},
-                    "level": {"type": "integer", "minimum": 0, "maximum": 3},
-                    "note": {"type": "string"}},
+    "properties": {
+        "label": {"type": "string"},
+        "level": {"type": "integer", "minimum": 0, "maximum": 3},
+        "note": {"type": "string"},
+    },
     "required": ["label"],
 }
 
@@ -100,13 +115,17 @@ TOOL_SCHEMA = {
         "type": "object",
         "required": ["deck_title", "slides", "study_guide_markdown"],
         "properties": {
-            "deck_title": {"type": "string",
-                            "description": "Deck cover title. \\n allowed for a line break."},
+            "deck_title": {
+                "type": "string",
+                "description": "Deck cover title. \\n allowed for a line break.",
+            },
             "deck_subtitle": {"type": "string"},
             "closing_heading": {"type": "string", "description": "Final slide's headline."},
             "cta": {"type": "string", "description": "One short closing call-to-action line."},
             "slides": {
-                "type": "array", "minItems": 6, "maxItems": 20,
+                "type": "array",
+                "minItems": 6,
+                "maxItems": 20,
                 "items": {
                     "type": "object",
                     "required": ["kind"],
@@ -116,56 +135,108 @@ TOOL_SCHEMA = {
                         "heading": {"type": "string"},
                         "lede": {"type": "string"},
                         "meta": {"type": "string"},
-                        "points": {"type": "array", "items": _POINT_SCHEMA,
-                                    "description": "Bullets for content/content_stat kinds."},
-                        "hero_stat": {"type": "object", "properties": {
-                            "num": {"type": "string"}, "label": {"type": "string"},
-                            "desc": {"type": "string"}},
-                            "description": "content_stat only -- must be a number literally stated in the transcript."},
-                        "steps": {"type": "array", "items": _POINT_SCHEMA,
-                                    "description": "process kind: ordered steps/stages."},
-                        "dominant": {"type": "integer",
-                                      "description": "process kind: 0-based index of the step to emphasize."},
-                        "items": {"type": "array", "items": _POINT_SCHEMA,
-                                    "description": "agenda kind: numbered list."},
-                        "active": {"type": "integer",
-                                    "description": "agenda kind: 0-based index of the highlighted item."},
-                        "left": _PANE_SCHEMA, "right": _PANE_SCHEMA,
-                        "quote": {"type": "string",
-                                    "description": "quote kind: verbatim from the transcript."},
+                        "points": {
+                            "type": "array",
+                            "items": _POINT_SCHEMA,
+                            "description": "Bullets for content/content_stat kinds.",
+                        },
+                        "hero_stat": {
+                            "type": "object",
+                            "properties": {
+                                "num": {"type": "string"},
+                                "label": {"type": "string"},
+                                "desc": {"type": "string"},
+                            },
+                            "description": "content_stat only -- must be a number literally stated in the transcript.",
+                        },
+                        "steps": {
+                            "type": "array",
+                            "items": _POINT_SCHEMA,
+                            "description": "process kind: ordered steps/stages.",
+                        },
+                        "dominant": {
+                            "type": "integer",
+                            "description": "process kind: 0-based index of the step to emphasize.",
+                        },
+                        "items": {
+                            "type": "array",
+                            "items": _POINT_SCHEMA,
+                            "description": "agenda kind: numbered list.",
+                        },
+                        "active": {
+                            "type": "integer",
+                            "description": "agenda kind: 0-based index of the highlighted item.",
+                        },
+                        "left": _PANE_SCHEMA,
+                        "right": _PANE_SCHEMA,
+                        "quote": {
+                            "type": "string",
+                            "description": "quote kind: verbatim from the transcript.",
+                        },
                         "attribution": {"type": "string"},
-                        "stats": {"type": "array", "maxItems": 2, "items": _STAT_SCHEMA,
-                                    "description": ("data kind: up to 2 satellite figures beside the "
-                                                    "hero_stat. Every num must be literally stated in "
-                                                    "the transcript.")},
-                        "rail_label": {"type": "string",
-                                    "description": ("data kind: short word printed vertically up the "
-                                                    "left rail, e.g. METRICS or OUTAGE.")},
-                        "chart_type": {"type": "string", "enum": ["hbar"],
-                                    "description": "chart kind: only 'hbar' is implemented."},
-                        "data": {"type": "array", "minItems": 3, "items": _DATUM_SCHEMA,
-                                    "description": ("chart kind: >=3 points, each value literally stated "
-                                                    "in the transcript and all sharing one unit. Bars are "
-                                                    "sorted descending automatically.")},
-                        "unit": {"type": "string",
-                                    "description": "chart kind: unit suffix appended to every value, e.g. '%'."},
-                        "highlight": {"type": "integer",
-                                    "description": "chart kind: 0-based index (into `data` as written) of the bar to accent."},
-                        "rows": {"type": "array", "items": _ROW_SCHEMA,
-                                    "description": ("scorecard kind: self-assessment rows. `level` is the "
-                                                    "room's own 0-3 rating and ships at 0; `note` carries "
-                                                    "the transcript fact that motivates the row.")},
-                        "footer_l": {"type": "string"}, "footer_r": {"type": "string"},
+                        "stats": {
+                            "type": "array",
+                            "maxItems": 2,
+                            "items": _STAT_SCHEMA,
+                            "description": (
+                                "data kind: up to 2 supporting figures beside the "
+                                "hero_stat. Every num must be literally stated in "
+                                "the transcript."
+                            ),
+                        },
+                        "rail_label": {
+                            "type": "string",
+                            "description": (
+                                "data kind: short word printed vertically up the "
+                                "left rail, e.g. METRICS or OUTAGE."
+                            ),
+                        },
+                        "chart_type": {
+                            "type": "string",
+                            "enum": ["hbar"],
+                            "description": "chart kind: only 'hbar' is implemented.",
+                        },
+                        "data": {
+                            "type": "array",
+                            "minItems": 3,
+                            "items": _DATUM_SCHEMA,
+                            "description": (
+                                "chart kind: >=3 points, each value literally stated "
+                                "in the transcript and all sharing one unit. Bars are "
+                                "sorted descending automatically."
+                            ),
+                        },
+                        "unit": {
+                            "type": "string",
+                            "description": "chart kind: unit suffix appended to every value, e.g. '%'.",
+                        },
+                        "highlight": {
+                            "type": "integer",
+                            "description": "chart kind: 0-based index (into `data` as written) of the bar to accent.",
+                        },
+                        "rows": {
+                            "type": "array",
+                            "items": _ROW_SCHEMA,
+                            "description": (
+                                "scorecard kind: self-assessment rows. `level` is the "
+                                "room's own 0-3 rating and ships at 0; `note` carries "
+                                "the transcript fact that motivates the row."
+                            ),
+                        },
+                        "footer_l": {"type": "string"},
+                        "footer_r": {"type": "string"},
                         "notes": {"type": "string", "description": "Speaker notes for this slide."},
                     },
                 },
             },
             "study_guide_markdown": {
                 "type": "string",
-                "description": ("A standalone markdown study guide: summary, key takeaways, "
-                                 "and 3-6 discussion/quiz questions. Grounded only in the "
-                                 "transcript -- no content that isn't also in the deck or the "
-                                 "transcript itself."),
+                "description": (
+                    "A standalone markdown study guide: summary, key takeaways, "
+                    "and 3-6 discussion/quiz questions. Grounded only in the "
+                    "transcript -- no content that isn't also in the deck or the "
+                    "transcript itself."
+                ),
             },
         },
     },
@@ -186,7 +257,7 @@ SYSTEM_PROMPT = (
     "and 3-6 discussion/quiz questions a facilitator could actually run a "
     "session with.\n"
     "6. The visual kinds carry the same sourcing rule, and each has a gate:\n"
-    "   - `data`: hero_stat plus up to 2 satellites. Every `num` must appear "
+    "   - `data`: hero_stat plus up to 2 supporting stats. Every `num` must appear "
     "in the transcript verbatim. Three real figures or use `content_stat`.\n"
     "   - `chart`: needs >=3 values that are ALL literally stated AND share "
     "one unit (all percentages, all dollars, all counts of the same thing). "
@@ -227,11 +298,11 @@ def _validate_slide_data(i: int, sl: dict) -> None:
         if not str(hero.get("num", "")).strip():
             raise TrainingGenerationError(
                 f"Slide {i} is a data slide with no hero_stat.num. Use content or "
-                "callout when the transcript has no figure to anchor on.")
+                "callout when the transcript has no figure to anchor on."
+            )
         for j, st in enumerate(sl.get("stats") or [], 1):
             if not str((st or {}).get("num", "")).strip():
-                raise TrainingGenerationError(
-                    f"Slide {i} satellite stat {j} has no num.")
+                raise TrainingGenerationError(f"Slide {i} supporting stat {j} has no num.")
 
     elif kind == "chart":
         pts = sl.get("data") or []
@@ -239,14 +310,13 @@ def _validate_slide_data(i: int, sl: dict) -> None:
             raise TrainingGenerationError(
                 f"Slide {i} is a chart with {len(pts)} point(s); a chart needs at "
                 "least 3 values that are all literally stated in the transcript "
-                "and share one unit. With fewer, use data or content_stat.")
+                "and share one unit. With fewer, use data or content_stat."
+            )
         for j, pt in enumerate(pts, 1):
             if not isinstance((pt or {}).get("value"), (int, float)):
-                raise TrainingGenerationError(
-                    f"Slide {i} chart point {j} has a non-numeric value.")
+                raise TrainingGenerationError(f"Slide {i} chart point {j} has a non-numeric value.")
             if not str((pt or {}).get("label", "")).strip():
-                raise TrainingGenerationError(
-                    f"Slide {i} chart point {j} has no label.")
+                raise TrainingGenerationError(f"Slide {i} chart point {j} has no label.")
 
     elif kind == "scorecard":
         rows = sl.get("rows") or []
@@ -257,8 +327,7 @@ def _validate_slide_data(i: int, sl: dict) -> None:
                 raise TrainingGenerationError(f"Slide {i} scorecard row {j} has no label.")
             lvl = (row or {}).get("level", 0)
             if not isinstance(lvl, int) or not 0 <= lvl <= 3:
-                raise TrainingGenerationError(
-                    f"Slide {i} scorecard row {j} has level {lvl!r}; must be 0-3.")
+                raise TrainingGenerationError(f"Slide {i} scorecard row {j} has level {lvl!r}; must be 0-3.")
 
 
 @dataclass
@@ -267,8 +336,9 @@ class TrainingResult:
     study_guide_md: str
 
 
-def generate_training(transcript_text: str, meta: dict, api_key: str,
-                       model: str = DEFAULT_MODEL) -> TrainingResult:
+def generate_training(
+    transcript_text: str, meta: dict, api_key: str, model: str = DEFAULT_MODEL
+) -> TrainingResult:
     """One Claude call: transcript in, a deck outline + study guide out.
 
     Raises TrainingGenerationError on anything that keeps this from being a
@@ -298,6 +368,12 @@ def generate_training(transcript_text: str, meta: dict, api_key: str,
     )
 
     client = anthropic.Anthropic(api_key=api_key)
+    log.info(
+        "calling %s for a training (%d transcript chars%s)",
+        model,
+        len(text),
+        ", truncated" if truncated else "",
+    )
     try:
         response = client.messages.create(
             model=model,
@@ -312,9 +388,7 @@ def generate_training(transcript_text: str, meta: dict, api_key: str,
             messages=[{"role": "user", "content": user_prompt}],
         )
     except anthropic.AuthenticationError as exc:
-        raise TrainingGenerationError(
-            "That Claude API key was rejected — check it in Settings."
-        ) from exc
+        raise TrainingGenerationError("That Claude API key was rejected — check it in Settings.") from exc
     except anthropic.APIError as exc:
         raise TrainingGenerationError(f"Claude API error: {exc}") from exc
     except Exception as exc:
@@ -351,12 +425,13 @@ def result_from_outline(data: dict, meta: dict) -> TrainingResult:
     lo = TOOL_SCHEMA["input_schema"]["properties"]["slides"]["minItems"]
     hi = TOOL_SCHEMA["input_schema"]["properties"]["slides"]["maxItems"]
     if not lo <= len(slides) <= hi:
-        raise TrainingGenerationError(f"A training needs {lo} to {hi} slides; this outline has {len(slides)}.")
+        raise TrainingGenerationError(
+            f"A training needs {lo} to {hi} slides; this outline has {len(slides)}."
+        )
     for i, sl in enumerate(slides, 1):
         kind = sl.get("kind")
         if kind not in SLIDE_KINDS:
-            raise TrainingGenerationError(
-                f"Slide {i} has kind {kind!r}; allowed: {', '.join(SLIDE_KINDS)}.")
+            raise TrainingGenerationError(f"Slide {i} has kind {kind!r}; allowed: {', '.join(SLIDE_KINDS)}.")
         if kind == "quote" and not (sl.get("quote") or "").strip():
             raise TrainingGenerationError(f"Slide {i} is a quote slide with no quote.")
         _validate_slide_data(i, sl)
@@ -365,7 +440,8 @@ def result_from_outline(data: dict, meta: dict) -> TrainingResult:
     if full_bleeds > 1:
         raise TrainingGenerationError(
             f"{full_bleeds} full_bleed slides; at most 1 per deck (deckgen budgets "
-            "3 polychrome moments and cover/closing already use two).")
+            "3 polychrome moments and cover/closing already use two)."
+        )
 
     guide = (data.get("study_guide_markdown") or "").strip()
     if not guide:
@@ -386,9 +462,9 @@ def outline_brief() -> str:
     house rules the API path sends as the system prompt, plus the exact JSON
     shape `train.py --outline` accepts. Printed by `train.py --brief`."""
     import json
+
     return (
-        SYSTEM_PROMPT
-        + "\n\nWrite ONE JSON object matching this schema (the `input_schema` of the "
+        SYSTEM_PROMPT + "\n\nWrite ONE JSON object matching this schema (the `input_schema` of the "
         "submit_training tool) and save it as outline.json:\n"
         + json.dumps(TOOL_SCHEMA["input_schema"], indent=2)
     )

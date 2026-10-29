@@ -5,6 +5,7 @@ tests plant a fake key in the environment and assert that nothing beyond its
 last four characters ever reaches stdout or stderr, and that it lands in
 credentials.json, never in shows.json.
 """
+
 from __future__ import annotations
 
 import json
@@ -17,6 +18,7 @@ FAKE_KEY = "sk-ant-test-0123456789abcdefXYZ9"
 @pytest.fixture
 def settings(app_mod):
     import settings
+
     return settings
 
 
@@ -34,6 +36,7 @@ def _snap(settings, capsys) -> dict:
 
 # -- show ------------------------------------------------------------------------
 
+
 def test_show_defaults(settings, sori_home, capsys):
     code, out, err = _run(settings, capsys, ["show"])
     assert code == 0 and err == ""
@@ -46,13 +49,17 @@ def test_show_defaults(settings, sori_home, capsys):
 
     snap = _snap(settings, capsys)
     assert snap == {
-        "model": "base.en", "lang": "en",
+        "model": "base.en",
+        "lang": "en",
         "transcripts_dir": str(sori_home / "Transcripts"),
-        "deck_theme": "studio", "api_key_set": False, "api_key_last4": None,
+        "deck_theme": "studio",
+        "api_key_set": False,
+        "api_key_last4": None,
     }
 
 
 # -- model / lang / deck-theme -----------------------------------------------------
+
 
 def test_model_and_lang_persist(settings, app_mod, capsys):
     code, out, _ = _run(settings, capsys, ["model", "small.en"])
@@ -93,6 +100,7 @@ def test_deck_theme_persists(settings, app_mod, capsys):
     # so naming one here fails the suite on a public clone for a reason that
     # has nothing to do with what this test checks.
     import deck_render
+
     theme = sorted(deck_render.THEMES)[-1]
     code, out, _ = _run(settings, capsys, ["deck-theme", theme])
     assert code == 0 and out.strip() == f"deck-theme {theme}"
@@ -101,6 +109,7 @@ def test_deck_theme_persists(settings, app_mod, capsys):
 
 
 # -- transcripts-dir ---------------------------------------------------------------
+
 
 def test_transcripts_dir_set_and_default(settings, app_mod, sori_home, tmp_path, capsys):
     target = tmp_path / "elsewhere" / "Transcripts"
@@ -134,6 +143,7 @@ def test_transcripts_dir_needs_exactly_one_of_path_or_default(settings, tmp_path
 
 
 # -- api-key -----------------------------------------------------------------------
+
 
 def test_api_key_set_from_env_prints_only_last4(settings, sori_home, monkeypatch, capsys):
     monkeypatch.setenv("ANTHROPIC_API_KEY", FAKE_KEY)
@@ -175,11 +185,11 @@ def test_api_key_clear(settings, app_mod, sori_home, monkeypatch, capsys):
     assert code == 0 and out.strip() == "cleared"
     assert _run(settings, capsys, ["api-key", "status"])[1].strip() == "api key: not set"
     assert app_mod.anthropic_api_key() is None
-    assert "anthropic_api_key" not in json.loads(
-        (sori_home / "credentials.json").read_text(encoding="utf-8"))
+    assert "anthropic_api_key" not in json.loads((sori_home / "credentials.json").read_text(encoding="utf-8"))
 
 
 # -- usage -------------------------------------------------------------------------
+
 
 def test_usage_errors_are_exit_2(settings, capsys):
     assert _run(settings, capsys, [])[0] == 2

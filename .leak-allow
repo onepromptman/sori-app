@@ -1,0 +1,9 @@
+# Reviewed exceptions for the OnePromptMan leak scanner (function-core build/leak_scan.py).
+# One regex per line, matched against the flagged text only: HIT, or PATH :: HIT.
+
+# The UI preview stub shows a placeholder Windows profile folder.
+^tools/ui-preview/stub\.js$ :: ^C:/Users/you$
+
+# Fake API keys in tests; the suite proves they never reach output or the network.
+^tests/test_settings\.py$ :: ^sk-ant-test-0123456789abcdefXYZ9$
+^tests/test_train\.py$ :: ^anthropic_api_key": "sk-saved-3333$

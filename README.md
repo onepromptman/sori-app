@@ -143,6 +143,20 @@ constant each; edit, then rebuild.
 Only training generation has a look to change. For transcripts alone,
 `training.py` and `themes/` are never touched.
 
+## When something goes wrong
+
+Run `python app.py --selftest` (or `Sori.exe --selftest`): it checks every
+part the app needs and writes what is missing to `sweep.log`. Two files in your Sori folder
+(`%USERPROFILE%\Sori`, or `SORI_HOME`) tell you what happened:
+`sweep.log` holds the summary of every headless sweep and self-test, and
+`sori.log` holds errors from the app, each line with a run id. Set
+`LOG_LEVEL=INFO` for more detail, or `LOG_FORMAT=json` for one JSON object
+per line. `sori.log` may contain host names, file names, error classes and
+short error messages; it never contains your API key, transcript text, full
+URLs or full folder paths, and it rotates at 2 MB, keeping three old copies.
+Neither file should ever hold your API key or transcript text; if one does,
+that is a security bug (see [SECURITY.md](SECURITY.md)).
+
 ## Build the exe
 
 ```bash

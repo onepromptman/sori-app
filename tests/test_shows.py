@@ -5,6 +5,7 @@ the ``sori_home`` fixture, with ``parse_feed`` replaced by ``fake_feed`` so no
 test touches the network. The stdout/stderr contract is asserted through
 ``capsys``.
 """
+
 from __future__ import annotations
 
 import json
@@ -15,6 +16,7 @@ import pytest
 @pytest.fixture
 def shows(app_mod):
     import shows
+
     return shows
 
 
@@ -31,6 +33,7 @@ def _added(shows, capsys, url, *flags):
 
 
 # -- list / add / remove --------------------------------------------------------
+
 
 def test_list_empty(shows, capsys):
     code, out, err = _run(shows, capsys, ["list"])
@@ -76,6 +79,7 @@ def test_add_unknown_folder_fails_before_fetching(shows, app_mod, monkeypatch, c
     def boom(*a, **k):
         calls.append(a)
         raise AssertionError("feed must not be fetched")
+
     monkeypatch.setattr(app_mod, "parse_feed", boom)
     code, out, err = _run(shows, capsys, ["add", "https://x/feed", "--folder", "nope"])
     assert code == 1 and out == ""
@@ -146,6 +150,7 @@ def test_unknown_show_is_exit_1(shows, capsys):
 
 # -- auto / auto-train -------------------------------------------------------------
 
+
 def test_auto_and_auto_train_toggle(shows, fake_feed, capsys):
     fake_feed("Fake Show")
     sid = _added(shows, capsys, "https://x/feed")["id"]
@@ -163,6 +168,7 @@ def test_auto_bad_state_is_usage_error(shows, capsys):
 
 
 # -- folders -----------------------------------------------------------------------
+
 
 def test_folder_lifecycle_and_set(shows, fake_feed, capsys):
     fake_feed("Fake Show")
@@ -197,6 +203,7 @@ def test_folder_errors_are_exit_1(shows, capsys):
 
 # -- check -------------------------------------------------------------------------
 
+
 def test_check_lists_new_episodes(shows, fake_feed, seeded_show, capsys):
     code, out, err = _run(shows, capsys, ["check"])
     assert code == 0
@@ -208,6 +215,7 @@ def test_check_lists_new_episodes(shows, fake_feed, seeded_show, capsys):
 
 
 # -- usage / parity ----------------------------------------------------------------
+
 
 def test_usage_errors_are_exit_2(shows, capsys):
     assert _run(shows, capsys, [])[0] == 2
@@ -238,6 +246,7 @@ def test_store_parity_with_api(shows, app_mod, fake_feed, capsys):
 
 # -- handoff 1.2 DoD: subscribe from the CLI, then the sweep picks it up ---------
 
+
 def test_cli_added_show_is_swept(shows, app_mod, fake_feed, fake_transcriber, capsys):
     fake_transcriber.seconds = 0.1
     _added(shows, capsys, "https://x/feed", "--auto")
@@ -245,3 +254,12 @@ def test_cli_added_show_is_swept(shows, app_mod, fake_feed, fake_transcriber, ca
     # add_show seeds `seen` with all but the newest episode, so exactly one lands.
     assert fake_transcriber.made == ["e1"]
     assert (app_mod.transcripts_dir() / "Fake Show" / "e1.txt").exists()
+
+
+def test_new_ids_never_collide_within_a_millisecond(app_mod):
+    """Show and folder ids come off a millisecond clock; two adds in the same
+    millisecond must still get two ids (this made the tests above flaky)."""
+    taken: set[str] = set()
+    for _ in range(50):
+        taken.add(app_mod._new_id("s", taken))
+    assert len(taken) == 50

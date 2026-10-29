@@ -1,15 +1,16 @@
-"""Shared pytest fixtures for Sori.
+r"""Shared pytest fixtures for Sori.
 
 Two guarantees every test inherits:
 
 * **Isolation.** ``SORI_HOME`` points at a fresh temp dir before ``app`` is
-  imported and again per test, so nothing here can touch Bryan's real
+  imported and again per test, so nothing here can touch a real
   ``%USERPROFILE%\Sori``.
 * **No spend.** A fake ``anthropic`` module is installed in ``sys.modules``
   before any test runs. Its ``Anthropic`` client raises on construction, so a
   test that reaches the real API path fails loudly instead of billing. Tests
   that need a working client replace ``fake_anthropic.Anthropic`` explicitly.
 """
+
 from __future__ import annotations
 
 import os
@@ -73,12 +74,18 @@ def sori_home(tmp_path, monkeypatch) -> Path:
 def app_mod(sori_home):
     """The ``app`` module, imported after ``SORI_HOME`` is isolated."""
     import app
+
     return app
 
 
 EPISODES = [
-    {"id": f"e{i}", "title": f"Episode {i}", "url": f"https://x/{i}", "kind": "youtube",
-     "date": f"2026-09-0{i}"}
+    {
+        "id": f"e{i}",
+        "title": f"Episode {i}",
+        "url": f"https://x/{i}",
+        "kind": "youtube",
+        "date": f"2026-09-0{i}",
+    }
     for i in range(1, 8)
 ]
 
@@ -133,10 +140,19 @@ def fake_transcriber(app_mod, monkeypatch):
 def seeded_show(app_mod):
     """One subscribed, auto-on RSS show with an empty ``seen`` list."""
     data = app_mod.load_store()
-    show = {"id": "s1", "name": "Fake Show", "type": "rss", "feed_url": "https://x/feed",
-            "source_url": "https://x/feed", "auto": True,
-            "added_at": "2026-09-05T00:00:00+00:00", "last_seen": None,
-            "last_checked": None, "seen": [], "folder": "unsorted"}
+    show = {
+        "id": "s1",
+        "name": "Fake Show",
+        "type": "rss",
+        "feed_url": "https://x/feed",
+        "source_url": "https://x/feed",
+        "auto": True,
+        "added_at": "2026-09-05T00:00:00+00:00",
+        "last_seen": None,
+        "last_checked": None,
+        "seen": [],
+        "folder": "unsorted",
+    }
     data["shows"].append(show)
     app_mod.save_store(data)
     return show

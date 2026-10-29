@@ -12,6 +12,7 @@ as "in the unzipped folder" while no release ever contained it.
 Usage:  py package.py            (build + assemble + zip)
         py package.py --no-build (re-assemble + zip an existing dist/Sori)
 """
+
 from __future__ import annotations
 
 import shutil
@@ -36,8 +37,7 @@ SIDECARS = [
 def main() -> int:
     if "--no-build" not in sys.argv:
         print("== building (this takes a few minutes) ==")
-        r = subprocess.run([sys.executable, "-m", "PyInstaller",
-                            "--noconfirm", "Sori.spec"], cwd=ROOT)
+        r = subprocess.run([sys.executable, "-m", "PyInstaller", "--noconfirm", "Sori.spec"], cwd=ROOT)
         if r.returncode:
             print("!! PyInstaller failed", file=sys.stderr)
             return r.returncode

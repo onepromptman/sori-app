@@ -50,7 +50,7 @@ Checked 3 show(s): 2 new episode(s).
 1 episode(s) left for manual review (show not set to auto).
   > transcribing: Some title
     downloading the Whisper model (first run only)…
-    saved: C:\Users\me\Sori\Transcripts\The Daily\2026-09-05 - Some title.txt
+    saved: ...\Transcripts\The Daily\2026-09-05 - Some title.txt
     failed: <reason> (will try again next sweep, 2 left)   |  (giving up — use Retry in the app)
   > generating training: Some title
     saved: ...\Trainings\The Daily\2026-09-05 - Some title.pptx

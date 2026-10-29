@@ -11,6 +11,7 @@ and each group passes on its own (``-k T3``).
     py -m pytest tests/test_queue.py -q
     py tests/test_queue.py                (same thing, direct)
 """
+
 from __future__ import annotations
 
 import time
@@ -39,6 +40,7 @@ class Harness:
     # -- fakes' knobs --------------------------------------------------------
     def ep(self, i: int) -> dict:
         from conftest import EPISODES
+
         return {**EPISODES[i - 1], "show_id": SHOW_ID, "show_name": self.show["name"]}
 
     def submit_auto(self, i: int) -> str:
@@ -77,10 +79,10 @@ def h(app_mod, fake_feed, fake_transcriber, seeded_show) -> Harness:
 
 
 def test_T1_priority_manual_pick_runs_before_earlier_auto_pushes(h: Harness):
-    h.submit_auto(1)                                   # auto, starts now
+    h.submit_auto(1)  # auto, starts now
     assert h.wait_until(lambda: h.worker._running == "e1", 5)
-    h.submit_auto(2)                                   # auto, queued
-    r = h.api.transcribe_episode(SHOW_ID, h.ep(3))     # manual, queued later
+    h.submit_auto(2)  # auto, queued
+    r = h.api.transcribe_episode(SHOW_ID, h.ep(3))  # manual, queued later
     assert r["ok"], r
     assert h.status_of("e2") == "queued" and h.status_of("e3") == "queued"
     assert h.wait_until(lambda: len(h.done_order()) >= 3, 20)
@@ -89,7 +91,7 @@ def test_T1_priority_manual_pick_runs_before_earlier_auto_pushes(h: Harness):
 
 def test_T2_dismiss_an_episode_that_was_never_queued(h: Harness):
     h.transcriber.seconds = 0.1
-    h.submit_auto(1)                                   # a transcribed episode is seen too
+    h.submit_auto(1)  # a transcribed episode is seen too
     assert h.wait_done("e1")
 
     r = h.api.dismiss_episode(SHOW_ID, "e4")
@@ -102,9 +104,9 @@ def test_T2_dismiss_an_episode_that_was_never_queued(h: Harness):
 
 
 def test_T3_dismiss_a_queued_not_yet_running_episode(h: Harness):
-    h.submit_auto(5)                                   # starts now
+    h.submit_auto(5)  # starts now
     assert h.wait_until(lambda: h.worker._running == "e5", 5)
-    h.submit_auto(6)                                   # queued
+    h.submit_auto(6)  # queued
     assert h.status_of("e6") == "queued"
 
     r = h.api.dismiss_episode(SHOW_ID, "e6")
@@ -112,7 +114,7 @@ def test_T3_dismiss_a_queued_not_yet_running_episode(h: Harness):
     assert "e6" not in h.worker.states(), "row gone from the job table now"
 
     assert h.wait_done("e5")
-    time.sleep(0.3)                                    # let the loop drain past e6
+    time.sleep(0.3)  # let the loop drain past e6
     assert "e6" not in h.worker.states(), "still gone after the loop drained it"
     assert not h.emitted("e6", "cancelled"), "never got a 'cancelled' snapshot"
     assert "e6" not in h.made, "never transcribed"
@@ -128,8 +130,9 @@ def _dismiss_running(h: Harness, eid: str = "e7") -> dict:
 def test_T4_dismiss_the_episode_that_is_running_right_now(h: Harness):
     r = _dismiss_running(h, "e7")
     assert r["data"]["status"] == "stopping", r
-    assert h.wait_until(lambda: "e7" not in h.worker.states() and h.worker._running is None, 10), \
+    assert h.wait_until(lambda: "e7" not in h.worker.states() and h.worker._running is None, 10), (
         "row dropped once cancel landed"
+    )
     assert h.emitted("e7", "dismissed")
     assert "e7" not in h.made, "no transcript written"
     assert "e7" in h.seen()
@@ -147,9 +150,9 @@ def test_T5_a_deliberate_resubmit_after_dismiss_still_works(h: Harness):
 
 
 def test_T6_bulk_dismiss(h: Harness):
-    r = h.api.dismiss_episodes([{"show_id": SHOW_ID, "id": "zz1"},
-                                {"show_id": SHOW_ID, "id": "zz2"},
-                                {"bad": 1}])
+    r = h.api.dismiss_episodes(
+        [{"show_id": SHOW_ID, "id": "zz1"}, {"show_id": SHOW_ID, "id": "zz2"}, {"bad": 1}]
+    )
     assert r["ok"], r
     assert r["data"]["dismissed"] == 2, "counts valid items only"
     assert {"zz1", "zz2"} <= h.seen()
@@ -157,8 +160,10 @@ def test_T6_bulk_dismiss(h: Harness):
 
 def test_T7_same_show_name_heuristic(app_mod):
     f = app_mod._same_show_name
-    assert f("The AI Daily Brief: Artificial Intelligence News and Analysis",
-             "The AI Daily Brief: Artificial Intelligence News"), "the two AI Daily Brief entries match"
+    assert f(
+        "The AI Daily Brief: Artificial Intelligence News and Analysis",
+        "The AI Daily Brief: Artificial Intelligence News",
+    ), "the two AI Daily Brief entries match"
     assert not f("The Daily", "The Daily Show")
     assert not f("AI", "AI Daily"), "short names need an exact match"
     assert f("Lex", "Lex")

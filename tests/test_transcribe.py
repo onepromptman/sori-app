@@ -2,6 +2,7 @@
 writes (so train.py reads it back), feed dates parse, --title/--show/--date
 override the source. No network: the feed fetch is monkeypatched.
 """
+
 from __future__ import annotations
 
 import argparse
@@ -13,12 +14,10 @@ import transcribe as tx
 
 
 def test_header_block_round_trips_through_train():
-    meta = {"title": "Some Episode", "show": "The Daily", "date": "2026-08-31",
-            "url": "https://x/ep.mp3"}
+    meta = {"title": "Some Episode", "show": "The Daily", "date": "2026-08-31", "url": "https://x/ep.mp3"}
     text = tx.header_block(meta) + "body"
     assert text == "Some Episode\nThe Daily — 2026-08-31\nhttps://x/ep.mp3\n\nbody"
-    assert train._header_meta(text) == {"title": "Some Episode", "show": "The Daily",
-                                        "date": "2026-08-31"}
+    assert train._header_meta(text) == {"title": "Some Episode", "show": "The Daily", "date": "2026-08-31"}
 
 
 def test_header_block_is_empty_without_a_title():
@@ -26,13 +25,16 @@ def test_header_block_is_empty_without_a_title():
     assert tx.header_block({"url": "https://x", "title": "  "}) == ""
 
 
-@pytest.mark.parametrize("raw, expected", [
-    ("Mon, 31 Aug 2026 09:50:02 +0000", "2026-08-31"),
-    ("20260831", "2026-08-31"),
-    ("2026-08-31", "2026-08-31"),
-    ("", ""),
-    ("not a date", ""),
-])
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        ("Mon, 31 Aug 2026 09:50:02 +0000", "2026-08-31"),
+        ("20260831", "2026-08-31"),
+        ("2026-08-31", "2026-08-31"),
+        ("", ""),
+        ("not a date", ""),
+    ],
+)
 def test_iso_date(raw, expected):
     assert tx._iso_date(raw) == expected
 
@@ -49,22 +51,27 @@ def test_write_output_prepends_header_only_when_saving(tmp_path, capsys):
 def test_meta_from_args_overrides_source():
     args = argparse.Namespace(title="Mine", show=None, date="2026-02-03")
     assert tx._meta_from_args(args, {"title": "Theirs", "show": "S", "url": "u"}) == {
-        "title": "Mine", "show": "S", "date": "2026-02-03", "url": "u"}
+        "title": "Mine",
+        "show": "S",
+        "date": "2026-02-03",
+        "url": "u",
+    }
 
 
 def test_parser_accepts_header_flags_on_every_transcribing_verb():
     p = tx.build_parser()
-    a = p.parse_args(["episode", "https://f", "words", "--title", "T", "--show", "S",
-                      "--date", "2026-01-01"])
+    a = p.parse_args(["episode", "https://f", "words", "--title", "T", "--show", "S", "--date", "2026-01-01"])
     assert (a.title, a.show, a.date) == ("T", "S", "2026-01-01")
     assert p.parse_args(["youtube", "https://y", "--show", "S"]).show == "S"
     assert p.parse_args(["audio", "x.mp3", "--title", "T"]).title == "T"
 
 
 def test_parse_feed_with_title(monkeypatch):
-    xml = (b"<rss><channel><title>The Daily</title><item><title>Ep</title>"
-           b"<enclosure url='https://x/1.mp3'/>"
-           b"<pubDate>Mon, 31 Aug 2026 09:50:02 +0000</pubDate></item></channel></rss>")
+    xml = (
+        b"<rss><channel><title>The Daily</title><item><title>Ep</title>"
+        b"<enclosure url='https://x/1.mp3'/>"
+        b"<pubDate>Mon, 31 Aug 2026 09:50:02 +0000</pubDate></item></channel></rss>"
+    )
     monkeypatch.setattr(tx, "fetch_xml", lambda url, timeout=30: xml)
     show, eps = tx._parse_feed_with_title("https://feed")
     assert show == "The Daily"

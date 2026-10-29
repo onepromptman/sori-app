@@ -12,13 +12,17 @@ but the list of themes on offer. See themes/README.md for the contract.
 All the mapping and curation lives here rather than in any backend, so a
 backend stays a matter of paint and never has to re-derive this logic.
 """
+
 from __future__ import annotations
 
 import contextlib
 import io
+import logging
 from pathlib import Path
 
 from themes import studio
+
+log = logging.getLogger(__name__)
 
 # The private deck engine is OPTIONAL. `engine/` holds a vendored private renderer
 # and its licensed fonts; a public checkout does not ship it, and Sori must
@@ -33,7 +37,8 @@ from themes import studio
 try:
     with contextlib.redirect_stdout(io.StringIO()):
         from engine import deckgen, install_fonts
-except Exception:                                   # pragma: no cover - absent by design
+except Exception:  # pragma: no cover - absent by design
+    log.debug("private deck engine not present; rendering with themes/studio")
     deckgen = None
     install_fonts = None
 
@@ -44,8 +49,7 @@ except Exception:                                   # pragma: no cover - absent 
 # Object.keys(themes); engine entries come first so an installed engine keeps
 # baek as the default.
 _BH_MODES = {"baek": "light", "dark": "dark", "dancheong": "dancheong"}
-THEMES = {**(_BH_MODES if deckgen is not None else {}),
-          **{name: name for name in studio.THEMES}}
+THEMES = {**(_BH_MODES if deckgen is not None else {}), **{name: name for name in studio.THEMES}}
 DEFAULT_THEME = "baek" if deckgen is not None else "studio"
 
 # The mode a full_bleed section break flips to, so the deck's one polychrome
@@ -55,9 +59,20 @@ _CONTRAST_MODE = {"light": "dark", "dark": "light"}
 
 # Body-slide kinds this bridge knows how to map. Must stay in sync with
 # training.SLIDE_KINDS (cover/closing are synthesized below, not LLM-controlled).
-_BODY_KINDS = {"divider", "content", "content_stat", "two_column",
-               "process", "agenda", "quote", "callout",
-               "full_bleed", "data", "scorecard", "chart"}
+_BODY_KINDS = {
+    "divider",
+    "content",
+    "content_stat",
+    "two_column",
+    "process",
+    "agenda",
+    "quote",
+    "callout",
+    "full_bleed",
+    "data",
+    "scorecard",
+    "chart",
+}
 
 
 class DeckRenderError(Exception):
@@ -66,7 +81,7 @@ class DeckRenderError(Exception):
 
 def _pts(items) -> list[dict]:
     out = []
-    for p in (items or []):
+    for p in items or []:
         if not isinstance(p, dict):
             continue
         label = (p.get("label") or "").strip()
@@ -77,17 +92,18 @@ def _pts(items) -> list[dict]:
 
 
 def _stats(items) -> list[dict]:
-    """`data` satellites. A stat with no number is dropped rather than rendered
+    """`data` supporting stats. A stat with no number is dropped rather than rendered
     as a bare label under a blank figure."""
     out = []
-    for st in (items or []):
+    for st in items or []:
         if not isinstance(st, dict):
             continue
         num = str(st.get("num") or "").strip()
         if not num:
             continue
-        out.append({"num": num, "label": (st.get("label") or "").strip(),
-                    "desc": (st.get("desc") or "").strip()})
+        out.append(
+            {"num": num, "label": (st.get("label") or "").strip(), "desc": (st.get("desc") or "").strip()}
+        )
     return out
 
 
@@ -95,7 +111,7 @@ def _datums(items) -> list[dict]:
     """`chart` bars. Values must be real numbers -- deckgen calls float() on
     them and sorts, so a string here would blow up mid-render."""
     out = []
-    for pt in (items or []):
+    for pt in items or []:
         if not isinstance(pt, dict):
             continue
         label = (pt.get("label") or "").strip()
@@ -109,7 +125,7 @@ def _datums(items) -> list[dict]:
 def _rows(items) -> list[dict]:
     """`scorecard` rows. `level` is clamped to deckgen's 0-3 trigram range."""
     out = []
-    for row in (items or []):
+    for row in items or []:
         if not isinstance(row, dict):
             continue
         label = (row.get("label") or "").strip()
@@ -117,8 +133,7 @@ def _rows(items) -> list[dict]:
             continue
         level = row.get("level", 0)
         level = level if isinstance(level, int) else 0
-        out.append({"label": label, "level": max(0, min(3, level)),
-                    "note": (row.get("note") or "").strip()})
+        out.append({"label": label, "level": max(0, min(3, level)), "note": (row.get("note") or "").strip()})
     return out
 
 
@@ -130,16 +145,30 @@ def _slide_spec(raw: dict, mode: str) -> dict:
     base = {"kind": kind, "mode": mode, "notes": raw.get("notes", "")}
 
     if kind == "divider":
-        base.update(title=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    lede=raw.get("lede", ""), meta=raw.get("meta", ""))
+        base.update(
+            title=raw.get("heading", ""),
+            eyebrow=raw.get("eyebrow", ""),
+            lede=raw.get("lede", ""),
+            meta=raw.get("meta", ""),
+        )
     elif kind == "content":
-        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    meta=raw.get("meta", ""), points=_pts(raw.get("points")),
-                    footer_l=raw.get("footer_l", ""), footer_r=raw.get("footer_r", ""))
+        base.update(
+            heading=raw.get("heading", ""),
+            eyebrow=raw.get("eyebrow", ""),
+            meta=raw.get("meta", ""),
+            points=_pts(raw.get("points")),
+            footer_l=raw.get("footer_l", ""),
+            footer_r=raw.get("footer_r", ""),
+        )
     elif kind == "content_stat":
-        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    meta=raw.get("meta", ""), points=_pts(raw.get("points"))[:3],
-                    hero_stat=raw.get("hero_stat") or {}, footer_l=raw.get("footer_l", ""))
+        base.update(
+            heading=raw.get("heading", ""),
+            eyebrow=raw.get("eyebrow", ""),
+            meta=raw.get("meta", ""),
+            points=_pts(raw.get("points"))[:3],
+            hero_stat=raw.get("hero_stat") or {},
+            footer_l=raw.get("footer_l", ""),
+        )
     elif kind == "two_column":
         left = raw.get("left") or {}
         right = raw.get("right") or {}
@@ -147,29 +176,39 @@ def _slide_spec(raw: dict, mode: str) -> dict:
         # rendered as two unlabelled panes with no statement of what they were
         # comparing. Backends are free to ignore them; they must at least be
         # offered the same header every other body kind gets.
-        base.update(eyebrow=raw.get("eyebrow", ""), heading=raw.get("heading", ""),
-                    lede=raw.get("lede", ""), meta=raw.get("meta", ""),
-                    left={"heading": left.get("heading", ""), "points": _pts(left.get("points"))},
-                    right={"heading": right.get("heading", ""), "points": _pts(right.get("points"))})
+        base.update(
+            eyebrow=raw.get("eyebrow", ""),
+            heading=raw.get("heading", ""),
+            lede=raw.get("lede", ""),
+            meta=raw.get("meta", ""),
+            left={"heading": left.get("heading", ""), "points": _pts(left.get("points"))},
+            right={"heading": right.get("heading", ""), "points": _pts(right.get("points"))},
+        )
     elif kind == "process":
         steps = _pts(raw.get("steps"))
         dominant = raw.get("dominant")
         if not isinstance(dominant, int) or not (0 <= dominant < max(len(steps), 1)):
             dominant = 0
-        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    steps=steps, dominant=dominant)
+        base.update(
+            heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""), steps=steps, dominant=dominant
+        )
     elif kind == "agenda":
         items = _pts(raw.get("items"))
         active = raw.get("active")
         active = active if isinstance(active, int) and 0 <= active < len(items) else None
-        base.update(title=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    meta=raw.get("meta", ""), items=items, active=active)
+        base.update(
+            title=raw.get("heading", ""),
+            eyebrow=raw.get("eyebrow", ""),
+            meta=raw.get("meta", ""),
+            items=items,
+            active=active,
+        )
     elif kind == "quote":
-        base.update(quote=raw.get("quote", ""), attribution=raw.get("attribution", ""),
-                    eyebrow=raw.get("eyebrow", ""))
+        base.update(
+            quote=raw.get("quote", ""), attribution=raw.get("attribution", ""), eyebrow=raw.get("eyebrow", "")
+        )
     elif kind == "callout":
-        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    lede=raw.get("lede", ""))
+        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""), lede=raw.get("lede", ""))
     elif kind == "full_bleed":
         # full_bleed's whole job is to be the deck's one polychrome moment: a
         # colour field behind an angled mask. That field is painted in
@@ -181,23 +220,38 @@ def _slide_spec(raw: dict, mode: str) -> dict:
         # deck is native to the engine rather than a hack.
         base["mode"] = _CONTRAST_MODE.get(mode, mode)
         # deckgen reads s["heading"] unguarded, so always supply one.
-        base.update(heading=raw.get("heading", "") or " ", eyebrow=raw.get("eyebrow", ""),
-                    lede=raw.get("lede", ""), meta=raw.get("meta", ""))
+        base.update(
+            heading=raw.get("heading", "") or " ",
+            eyebrow=raw.get("eyebrow", ""),
+            lede=raw.get("lede", ""),
+            meta=raw.get("meta", ""),
+        )
     elif kind == "data":
-        base.update(eyebrow=raw.get("eyebrow", ""),
-                    rail_label=raw.get("rail_label", "") or "METRICS",
-                    hero_stat=raw.get("hero_stat") or {},
-                    stats=_stats(raw.get("stats"))[:2])
+        base.update(
+            eyebrow=raw.get("eyebrow", ""),
+            rail_label=raw.get("rail_label", "") or "METRICS",
+            hero_stat=raw.get("hero_stat") or {},
+            stats=_stats(raw.get("stats"))[:2],
+        )
     elif kind == "chart":
-        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    meta=raw.get("meta", ""), chart_type=raw.get("chart_type", "") or "hbar",
-                    data=_datums(raw.get("data")), unit=raw.get("unit", ""),
-                    highlight=raw.get("highlight") if isinstance(raw.get("highlight"), int) else 0,
-                    footer_l=raw.get("footer_l", ""))
+        base.update(
+            heading=raw.get("heading", ""),
+            eyebrow=raw.get("eyebrow", ""),
+            meta=raw.get("meta", ""),
+            chart_type=raw.get("chart_type", "") or "hbar",
+            data=_datums(raw.get("data")),
+            unit=raw.get("unit", ""),
+            highlight=raw.get("highlight") if isinstance(raw.get("highlight"), int) else 0,
+            footer_l=raw.get("footer_l", ""),
+        )
     elif kind == "scorecard":
-        base.update(heading=raw.get("heading", ""), eyebrow=raw.get("eyebrow", ""),
-                    meta=raw.get("meta", ""), rows=_rows(raw.get("rows")),
-                    footer_l=raw.get("footer_l", ""))
+        base.update(
+            heading=raw.get("heading", ""),
+            eyebrow=raw.get("eyebrow", ""),
+            meta=raw.get("meta", ""),
+            rows=_rows(raw.get("rows")),
+            footer_l=raw.get("footer_l", ""),
+        )
     return base
 
 
@@ -206,8 +260,7 @@ def render_pptx(outline: dict, theme: str, out_path: Path) -> Path:
     subtitle, closing_heading, cta, slides}. Raises DeckRenderError on a
     structurally bad outline; deckgen itself is not defensive about that."""
     if theme not in THEMES:
-        raise DeckRenderError(
-            f"Unknown deck theme: {theme!r}. Available: {', '.join(THEMES)}.")
+        raise DeckRenderError(f"Unknown deck theme: {theme!r}. Available: {', '.join(THEMES)}.")
     use_bh = theme in _BH_MODES and deckgen is not None
     # The studio backend has no per-slide modes; pass its own name through so
     # _slide_spec's `mode` field stays a plain string either way.
@@ -224,13 +277,15 @@ def render_pptx(outline: dict, theme: str, out_path: Path) -> Path:
         raise DeckRenderError("The training has no slides to render.")
 
     cover = {
-        "kind": "cover", "mode": mode,
+        "kind": "cover",
+        "mode": mode,
         "title": outline.get("title") or "Untitled training",
         "eyebrow": "SORI TRAINING",
         "lede": outline.get("subtitle", ""),
     }
     closing = {
-        "kind": "closing", "mode": mode,
+        "kind": "closing",
+        "mode": mode,
         "heading": outline.get("closing_heading") or "Keep building",
         "eyebrow": "SORI TRAINING",
         "cta": outline.get("cta", ""),
@@ -239,6 +294,7 @@ def render_pptx(outline: dict, theme: str, out_path: Path) -> Path:
     slides = [cover] + [_slide_spec(s, mode) for s in raw_slides] + [closing]
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
+    log.info("rendering %d slides with the %s theme", len(slides), theme)
     try:
         if use_bh:
             deckgen.build(slides, str(out_path))

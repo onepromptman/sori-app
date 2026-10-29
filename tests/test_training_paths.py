@@ -7,6 +7,7 @@ day both collapsed to ``<date> - Ep.pptx``, and ``run_training`` then returned
 the first episode's deck for the second one without a call. No network, no
 spend: only the path function runs.
 """
+
 from __future__ import annotations
 
 import pytest

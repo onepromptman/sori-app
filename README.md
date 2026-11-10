@@ -16,7 +16,9 @@ flowchart LR
     D --> F[Practice and self-check guide]
 ```
 
-![Sori browser reader showing a fictional AI podcast about agents and practical workflows](docs/screenshot-ai-podcast.png)
+![Sori podcast queue with four selected AI-focused episode headlines](docs/screenshot-ai-queue.png)
+
+*Edited queue preview with selected AI podcast headlines.*
 
 ## Start here
 
@@ -94,7 +96,7 @@ requests for that show, so turn it off when you no longer want them.
 
 ![Example training deck using the public studio theme](docs/deck-studio.png)
 
-The screenshots use a fictional lesson. The sample outline was written for
+The training preview uses a fictional lesson. The sample outline was written for
 testing and rendered by Sori, without a live AI call. Its [transcript](examples/learning-demo.txt)
 and [outline](examples/learning-demo.json) are included so you can reproduce it.
 

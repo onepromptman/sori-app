@@ -20,29 +20,40 @@ flowchart LR
 
 ## Start here
 
-This is a **downloadable local browser app for Windows**. It opens in your
-normal browser and processes audio on your PC. It is not a hosted website:
-you install it once, and your computer must stay on while it works.
+Sori is a **local browser app**. Download it, start its local engine, and use
+it in your normal browser. Audio processing and your library stay on your
+computer. The Windows EXE is an optional launcher, not the primary product.
 
 **Browser edition: release candidate 3.2.2, prepared locally.** The
 [public release page](https://github.com/onepromptman/sori-app/releases/latest)
-currently offers the earlier desktop edition. Publish the reviewed 3.2.2
-artifacts before advertising the browser edition as available there.
+still offers the earlier desktop edition. The browser download described
+below must be published before it is advertised as available there.
 
-For the browser edition ZIP:
+1. Download **Sori-browser.zip** and extract the whole folder.
+2. Install [Python 3.11 or newer](https://www.python.org/downloads/) if you
+   do not already have it. On Windows, include the Python launcher.
+3. On Windows, double-click **start-sori.bat**. The first launch prepares
+   Sori's own dependencies, then opens your browser. Keep the launcher running.
+4. Paste a podcast RSS feed, pick an episode and click **Transcribe**.
+   Read and search the result in **Library**.
 
-1. Download **Sori-win64.zip**, right-click it, and choose **Extract All**.
-2. Open the extracted folder and double-click **Sori.exe**. Sori opens a tab
-   in your default browser. The unsigned app may trigger a Windows warning;
-   verify the source and release checksum before choosing to run it.
-3. Paste a podcast RSS feed into the source box. Pick an episode and click
-   **Transcribe**. Read and search the result in **Library**.
+Later launches reuse the installed dependencies. The first audio transcription
+downloads a speech model. You need disk space and internet access for these
+downloads and for fetching episodes. No Sori account or API key is needed
+for transcription. Your computer must stay on while Sori works.
 
-You need Windows 10 or 11, disk space for the app and speech model, and an
-internet connection to fetch episodes and download the model the first time.
-You can also add your own audio from the **+** menu. YouTube captions work
-when the source offers accessible captions in your chosen language; some
-videos need additional download tools or are unavailable.
+The local engine does not need the desktop window package or an executable
+builder. On macOS/Linux, see the source launcher below; those platforms have
+not received the Windows acceptance checks. Local file-picker buttons currently
+require Windows. Podcast RSS and the command-line routes are separate from them.
+
+**Optional Windows convenience download:** **Sori-win64.zip** bundles Python
+so you can extract it and open **Sori.exe** without installing Python yourself.
+It opens the same local browser app. The older desktop window is an optional
+mode. This unsigned download should be checked against its release checksum.
+
+YouTube captions work when the source offers accessible captions in your
+chosen language; some videos need additional tools or are unavailable.
 
 ## From listening to learning
 
@@ -97,18 +108,24 @@ Read [privacy and data flow](PRIVACY.md) before adding private recordings.
 
 ### Run from source
 
-Use Python 3.11 or newer and an isolated environment. From the extracted
-source directory on Windows:
+The cross-platform launcher prepares the browser dependencies in Sori's
+own environment and starts the local server:
+
+```bash
+python start_sori.py
+```
+
+On macOS/Linux use `python3 start_sori.py` or `sh start-sori.command`.
+For a manually managed environment on Windows:
 
 ```powershell
 uv venv --python 3.11
-uv pip install --python .venv/Scripts/python.exe -r requirements-app.txt
+uv pip install --python .venv/Scripts/python.exe -r requirements-browser.txt
 .venv/Scripts/python.exe app.py
 ```
 
-On macOS/Linux use `.venv/bin/python`. Browser file pickers are Windows-only;
-the CLI is the supported alternative for adding local files there. These
-platforms have not received the packaged Windows acceptance checks.
+On macOS/Linux the environment interpreter is `.venv/bin/python`.
+`requirements-app.txt` is the larger optional Windows packaging/desktop set.
 
 The server binds only `127.0.0.1:17654`. It checks the Host header, request
 origin and a per-launch token. Do not expose it through a public reverse proxy.
@@ -136,10 +153,12 @@ See [CLI documentation](docs/CLI.md) and [acceptance limits](ACCEPTANCE.md).
 .venv/Scripts/python.exe package.py
 ```
 
-The builder stages tracked files into a new folder under `build/`, excludes
-the optional private renderer, and creates **Sori-win64.zip**, **Sori-source.zip**,
+The default build needs only Python and Git. It stages tracked files into a
+new folder under `build/` and creates **Sori-browser.zip**, **Sori-source.zip**,
 **sori.zip**, a source hash manifest, and **SHA256SUMS.txt** in its `release/`
-folder. Stage intended new files in Git first. Untracked files are not copied.
+folder. The browser ZIP is the primary download. To also build the optional
+Windows executable, install `requirements-app.txt` and run
+`python package.py --windows-exe`. That build excludes the private renderer. Stage intended new files in Git first. Untracked files are not copied.
 Reusing an existing binary with `--no-build` is refused. Review source and
 binary contents before manually publishing a new release.
 

@@ -10,7 +10,12 @@ import tomllib
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-REQ_FILES = ("requirements.txt", "requirements-app.txt", "requirements-captions.txt")
+REQ_FILES = (
+    "requirements.txt",
+    "requirements-browser.txt",
+    "requirements-app.txt",
+    "requirements-captions.txt",
+)
 
 
 def _pyproject_pins() -> dict[str, str]:

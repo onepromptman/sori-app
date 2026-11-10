@@ -1,52 +1,35 @@
-Sori - podcast & YouTube transcripts, free and local
-====================================================
+Sori - your local browser app
+=============================
 
-START HERE
-  Double-click  Sori.exe  (in this folder). It opens in your web
-  browser and only runs on your own PC.
+PRIMARY DOWNLOAD: Sori-browser.zip
+Extract the whole folder. Install Python 3.11 or newer from python.org
+if needed, including the Python launcher on Windows.
 
-  Closing the browser tab leaves Sori running so it can keep
-  checking your shows. To shut it down, open Settings and click
-  Stop. Double-clicking Sori.exe again reopens it.
+On Windows, double-click start-sori.bat. First launch installs Sori's
+browser dependencies in its own environment, then opens your browser.
+Keep the launcher running while you use Sori. Later launches reuse setup.
+On macOS/Linux, run python3 start_sori.py from this folder.
 
-  This app is unsigned. Windows may show a security warning.
-  Verify the download source and published SHA256 checksum before
-  deciding whether to run it.
+Paste a podcast RSS feed, choose an episode and click Transcribe.
+Your transcript appears in Library. The first audio job downloads a
+speech model. Transcription is local and needs no API key.
 
-IMPORTANT
-  Keep this whole folder together. Sori.exe needs the "_internal"
-  folder beside it. To put it on your Desktop or Start menu,
-  right-click Sori.exe -> "Create shortcut" and move the SHORTCUT.
-  Moving the exe out on its own makes it fail to start.
+Closing the browser tab leaves Sori running. Settings > Stop stops it.
+Open your launcher again whenever you want to restart.
 
-WHAT IT DOES
-  Add a podcast RSS feed, a YouTube channel (@name), or a playlist,
-  and Sori turns new episodes into text. YouTube episodes use the
-  video's captions (seconds). Podcast audio is transcribed on your
-  own CPU. No account, no API key, no per-minute cost.
+OPTIONAL WINDOWS PACKAGE: Sori-win64.zip
+This bundles Python. If your download contains Sori.exe, opening it
+starts the same browser app without a separate Python installation.
+Keep its _internal folder beside it. The executable is unsigned;
+verify the source and release checksum before choosing to run it.
 
-  The first audio transcription downloads the Whisper model
-  (~150MB, once per machine) - that is the "fetching model" step.
+OPTIONAL TRAINING
+Generate Training sends your transcript to Anthropic using your own
+API key and paid credits. Auto-train can repeat that for new episodes.
+Read PRIVACY.md before using private material. Review generated answers.
 
-OPTIONAL: daily automatic transcripts
-  Double-click  setup-auto-sweep.bat  (in this folder) to register a
-  Windows task that checks your shows every morning at 9:03am.
-  To remove it later, run in a Command Prompt:
-      schtasks /delete /tn "Sori Daily Sweep" /f
+Your local library is separate from the downloaded app, normally in
+your user folder under Sori. Do not upload that data folder publicly.
 
-OPTIONAL: turn a transcript into a training deck
-  This is the one feature that is NOT free - it calls the Claude API
-  with your own key and sends the transcript to Anthropic. API charges apply. Add a key under
-  Settings -> Training generation. Leave it blank and everything
-  else works exactly the same.
-
-YOUR FILES
-  Transcripts, settings, and generated decks live in:
-      %USERPROFILE%\Sori\
-  so they survive replacing or moving the app.
-
-Full docs + how to customize it:
-  https://github.com/onepromptman/sori-app
-MIT licensed.
-
-Read PRIVACY.md for storage, sharing, and automatic training details.
+Documentation: https://github.com/onepromptman/sori-app
+MIT licensed. macOS/Linux packaging and file pickers are not verified.

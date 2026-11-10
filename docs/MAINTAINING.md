@@ -7,9 +7,11 @@ are in [CLI.md](CLI.md).
 
 ## Rules that bit us
 
-- **Build with `package.py`, never raw PyInstaller.** PyInstaller emits only
-  `Sori.exe` + `_internal/`; the sidecars beside the exe come from
-  `public_release.py`, which builds a fresh tracked-source snapshot and fails if a sidecar is missing.
+- **Browser first.** `start_sori.py` prepares the browser dependency set and
+  starts the local server. `start-sori.bat` is the Windows convenience launcher.
+  The default `package.py` build produces Sori-browser.zip without PyInstaller.
+- **The EXE is optional.** `package.py --windows-exe` also builds the bundled
+  Windows launcher with PyInstaller and adds its required sidecar files.
 - **Never re-zip an installed copy.** Public builds exclude untracked files and
   the private renderer. Outputs and checksums are under `build/public-*/release/`.
 - **`SORI_HOME=<dir>` isolates state** (subscriptions, transcripts, key).

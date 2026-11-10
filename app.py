@@ -2161,7 +2161,7 @@ def _sweep(say, lines: list[str], log_path: Path, started: datetime) -> int:
     return 1 if result["errors"] or failed or train_failed else 0
 
 
-def selftest() -> int:
+def selftest(include_window: bool = False) -> int:
     """Import every backend and report. Proves a packaged build is complete.
 
     The packaged app has no console, so this writes to sweep.log too \u2014 it is
@@ -2181,10 +2181,11 @@ def selftest() -> int:
         ("ctranslate2", "whisper runtime"),
         ("av", "audio decoding"),
         ("onnxruntime", "voice-activity filter"),
-        ("webview", "app window"),
         ("anthropic", "training generation (needs an API key too)"),
         ("pptx", "deck rendering (python-pptx)"),
     ]
+    if include_window:
+        checks.append(("webview", "optional desktop window"))
     failures = 0
     for module, what in checks:
         try:
@@ -2301,7 +2302,7 @@ def run_server(open_browser: bool = True) -> int:
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="app.py", description=f"{APP_NAME} \u2014 desktop app for podcast-transcriber."
+        prog="app.py", description=f"{APP_NAME} - local browser app for podcast learning."
     )
     parser.add_argument(
         "--sweep",
@@ -2326,7 +2327,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parser.parse_args(argv)
     sori_log.setup(log_file=state_dir() / "sori.log")
     if args.selftest:
-        return selftest()
+        return selftest(include_window=args.window)
     if args.sweep:
         return sweep()
     if args.window:

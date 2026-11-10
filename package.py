@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build fresh public source, plugin and Windows ZIPs. See public_release.py."""
+"""Build browser and plugin ZIPs; --windows-exe adds the optional EXE. See public_release.py."""
 
 from public_release import main
 

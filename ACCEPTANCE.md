@@ -94,3 +94,15 @@ checks, public theme selection, a local RSS fetch and real audio transcription.
 The packaged transcript preserved the test recording's opening, middle and
 ending. The app then shut down normally. Package inspection found no optional
 private renderer modules or known runtime-data filenames.
+
+## Browser-first distribution
+
+The primary archive is Sori-browser.zip. start-sori.bat (Windows) and
+start_sori.py prepare the browser dependency set and open the local app.
+No Windows executable, pywebview package or PyInstaller is required.
+The default package command does not build an executable. The optional
+Windows bundle is requested with --windows-exe.
+
+The browser-first regression suite passes 240 tests with one optional
+private-font test skipped. macOS/Linux launchers are provided but have not
+received interactive platform acceptance checks.

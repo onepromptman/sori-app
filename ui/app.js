@@ -88,7 +88,7 @@
       headers: { "Content-Type": "application/json", "X-Sori-Token": httpToken },
       body: JSON.stringify(body)
     }).catch(function () {
-      throw new Error("Sori isn't running. Double-click the Sori icon to start it.");
+      throw new Error("Sori isn't running. Open your Sori launcher to start it.");
     }).then(function (res) {
       if (res.status === 403) {
         // Sori restarted since this tab loaded, so the token changed.

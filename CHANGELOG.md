@@ -2,6 +2,12 @@
 
 ## 3.2.2 (release candidate)
 
+- Make the local browser app the primary download. The source launcher prepares
+  browser-only dependencies; the Windows EXE remains an optional convenience.
+- Default packaging creates Sori-browser.zip without PyInstaller. Use
+  --windows-exe explicitly for the optional bundled Windows runtime.
+- Browser selftest does not require the optional desktop window backend.
+
 - Build public artifacts from tracked source in a fresh folder; exclude the
   private renderer and refuse to re-zip old binaries. Include checksums.
 - Explain local browser operation, data flow, costs and release status.

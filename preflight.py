@@ -39,6 +39,7 @@ LOG_NAME = "preflight.log"
 # What each skill imports. Versions are not written here: they come from
 # pyproject.toml, the one place Sori's pins live.
 NEEDS = {
+    "browser": ("yt-dlp", "faster-whisper", "python-pptx", "anthropic"),
     "transcribe": ("yt-dlp", "faster-whisper"),
     "shows": ("yt-dlp", "python-pptx"),
     "sweep": ("yt-dlp", "faster-whisper", "python-pptx", "anthropic"),
@@ -47,8 +48,8 @@ NEEDS = {
 # The paid route of /sori:train (`preflight.py train --api`).
 API_EXTRA = ("anthropic",)
 # Verbs that may fetch from YouTube, and verbs that may run Whisper.
-YOUTUBE_VERBS = {"transcribe", "shows", "sweep"}
-WHISPER_VERBS = {"transcribe", "sweep"}
+YOUTUBE_VERBS = {"browser", "transcribe", "shows", "sweep"}
+WHISPER_VERBS = {"browser", "transcribe", "sweep"}
 
 REFUSED = (
     "Sori could not download its packages because this environment blocks package installs. "

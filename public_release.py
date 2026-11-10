@@ -45,7 +45,7 @@ def zip_tree(source: Path, output: Path, prefix: str) -> None:
                 archive.write(path, str(PurePosixPath(prefix) / path.relative_to(source).as_posix()))
 
 
-def build(root: Path) -> Path:
+def build(root: Path, windows_exe: bool = False) -> Path:
     """Use a new build folder each time; stale/private binaries cannot be reused."""
     parent = root / "build"
     parent.mkdir(exist_ok=True)
@@ -56,20 +56,22 @@ def build(root: Path) -> Path:
     manifest = {name: hashlib.sha256((source / name).read_bytes()).hexdigest() for name in paths}
     output = stage / "release"
     output.mkdir()
+    zip_tree(source, output / "Sori-browser.zip", "Sori")
     zip_tree(source, output / "Sori-source.zip", "Sori")
     # The plugin ZIP has its manifest at the root and includes the same source.
     zip_tree(source, output / "sori.zip", "")
-    subprocess.run(
-        [sys.executable, "-m", "PyInstaller", "--noconfirm", "Sori.spec"],
-        cwd=source,
-        check=True,
-    )
-    dist = source / "dist/Sori"
-    for src, dest in SIDECARS.items():
-        shutil.copyfile(source / src, dist / dest)
-    if not (dist / "Sori.exe").is_file():
-        raise ValueError("The Windows executable is missing.")
-    zip_tree(dist, output / "Sori-win64.zip", "Sori")
+    if windows_exe:
+        subprocess.run(
+            [sys.executable, "-m", "PyInstaller", "--noconfirm", "Sori.spec"],
+            cwd=source,
+            check=True,
+        )
+        dist = source / "dist/Sori"
+        for src, dest in SIDECARS.items():
+            shutil.copyfile(source / src, dist / dest)
+        if not (dist / "Sori.exe").is_file():
+            raise ValueError("The Windows executable is missing.")
+        zip_tree(dist, output / "Sori-win64.zip", "Sori")
     (output / "source-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
     sums = "".join(
         f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n"
@@ -85,7 +87,7 @@ def main(root: Path | None = None) -> int:
         print("Refused: public releases require a fresh build; existing dist folders cannot be re-zipped.")
         return 2
     try:
-        output = build(root or Path(__file__).resolve().parent)
+        output = build(root or Path(__file__).resolve().parent, windows_exe="--windows-exe" in sys.argv)
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
         print(f"Public build failed ({type(exc).__name__}). No release is ready.", file=sys.stderr)
         return 1

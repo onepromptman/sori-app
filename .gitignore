@@ -11,6 +11,7 @@ transcript*.txt
 # PyInstaller build output (the .spec IS committed - it's the build recipe)
 build/
 dist/
+/browser/design/
 
 # release artifacts built by Sori.spec (uploaded to GitHub Releases, not tracked)
 *.zip

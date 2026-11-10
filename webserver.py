@@ -318,7 +318,7 @@ class Handler(BaseHTTPRequestHandler):
 class SoriServer(ThreadingHTTPServer):
     # On Windows SO_REUSEADDR would let a second process bind the same port,
     # and a second launch would then never find the running copy.
-    allow_reuse_address = False
+    allow_reuse_address = os.name != "nt"
     daemon_threads = True
     block_on_close = False
     request_queue_size = 64
@@ -362,8 +362,8 @@ BUSY_MESSAGE = (
     "Wait for it to finish, or close it, then start Sori again."
 )
 PORT_MESSAGE = (
-    "Sori could not start because port {port} is in use by another program. "
-    "Set the SORI_PORT environment variable to a different number and try again."
+    "Sori could not open port {port}. If you just stopped Sori, wait a moment and try again. "
+    "If another program uses the port, set SORI_PORT to a different number."
 )
 
 

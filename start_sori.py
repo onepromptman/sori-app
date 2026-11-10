@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """Prepare Sori's browser dependencies, then open the local app."""
 
-from pathlib import Path
+import os
 import subprocess
 import sys
+from pathlib import Path
 
 import preflight
 
@@ -30,8 +31,14 @@ def main(argv=None):
             preflight.say("Sori prepares the default speech model in the background if needed.")
         preflight.say("If no tab opens, visit http://127.0.0.1:17654 (unless you changed SORI_PORT).")
         preflight.say("Keep this window open while using Sori. Use Settings > Stop when finished.")
+    command = [str(python), str(Path(__file__).with_name("app.py")), *args]
     try:
-        return subprocess.call([str(python), str(Path(__file__).with_name("app.py")), *args])
+        if os.name != "nt" and "--selftest" not in args:
+            os.execv(command[0], command)
+        return subprocess.call(command)
+    except OSError as exc:
+        print(f"Sori could not start: {exc}", file=sys.stderr)
+        return 2
     except KeyboardInterrupt:
         return 0
 

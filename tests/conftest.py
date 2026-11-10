@@ -59,7 +59,7 @@ fake_anthropic = _make_fake_anthropic()
 sys.modules["anthropic"] = fake_anthropic
 
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def sori_home(tmp_path, monkeypatch) -> Path:
     """A fresh, empty state dir; ``SORI_HOME`` points at it for the test."""
     home = tmp_path / "home"

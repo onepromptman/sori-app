@@ -1,5 +1,13 @@
 # Changelog
 
+## 3.4.2 (web beta)
+
+- Try the browser app with one setup ZIP and a local ChatGPT or Claude desktop session.
+- Transcribe locally with Whisper and view transcripts and training files together.
+- Add podcast RSS or Atom feeds up to 16 MB and save YouTube links for reference.
+- Request slides in ChatGPT or Claude and import the finished PowerPoint or guide.
+- Build optional desktop bundles with Python and transcription dependencies included.
+
 ## 3.4.1 (browser beta, prepared)
 
 - Start in the browser on Mac or Windows and try a bundled transcript from the first screen.

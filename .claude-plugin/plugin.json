@@ -1,6 +1,6 @@
 {
   "name": "sori",
-  "version": "3.4.1",
+  "version": "3.4.2",
   "description": "Local podcast transcription and a searchable browser library. Optional CLI/plugin skills curate source-grounded learning briefs, review evidence and render editable decks or prepare manual slide handoffs. Local transcription needs no API key; AI client usage and optional paid API training have separate costs.",
   "author": {
     "name": "OnePromptMan"

@@ -30,6 +30,10 @@ Full licence text: https://openfontlicense.org/open-font-license-official-text/
 
 ## Python dependencies
 
+The portable ZIPs include [Python Standalone Builds](https://docs.astral.sh/python-build-standalone/)
+and the transcription wheels. Python's license and the licenses supplied by
+the dependencies are included under the runtime folder.
+
 Installed from PyPI at build time and bundled into the release archive by
 PyInstaller. Each keeps its own licence; these are the direct dependencies
 declared in `requirements.txt`, `requirements-app.txt`, `requirements-claude.txt`

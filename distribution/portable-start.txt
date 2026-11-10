@@ -1,0 +1,16 @@
+Open Sori
+=========
+
+1. Unzip the whole download.
+2. Open the Sori folder. On Mac, double-click START SORI.command.
+   On Windows, double-click START SORI.bat (Windows Batch File).
+3. Sori opens in your browser. Leave the launcher window open.
+
+Choose Try a sample transcript or add a podcast RSS feed and click Transcribe.
+The first launch downloads the speech model in the background if needed.
+Python is included. Transcription works without an account or chatbot.
+
+To make slides, open a transcript and click Make slides. Choose ChatGPT or
+Claude and paste the copied request. The request includes your transcript.
+
+Use Settings > Stop to close Sori. To reopen it, use the same launcher.

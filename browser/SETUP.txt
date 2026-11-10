@@ -1,0 +1,38 @@
+TRY SORI
+
+1. Save Sori-setup.zip in Downloads. Open ChatGPT Desktop in Codex on This
+   computer, or Claude Desktop in Claude Code using your local computer.
+2. Paste this message:
+
+   Set up Sori from Sori-setup.zip in Downloads on this computer. Follow
+   SETUP.txt, then open Sori in my browser.
+
+3. In Sori, click Open sample. To try your own audio, choose an MP3, WAV,
+   or M4A file and click Transcribe. Stay online for the first model download.
+
+FOR THE DESKTOP ASSISTANT
+
+Use a local session with access to files, commands, and the browser. Extract
+Sori-setup.zip to a new folder the user owns, with site/index.html and serve.cjs
+under the extracted root. Keep that folder for next time. Use the tools already
+available on the device. There are no package dependencies.
+
+From the extracted root, run one command in a persistent local process:
+
+  node serve.cjs
+  python3 -m http.server 17841 --bind 127.0.0.1 --directory site
+  py -3 -m http.server 17841 --bind 127.0.0.1 --directory site
+
+Use Node if available, or an existing Python 3. If neither is available,
+download the official portable Node.js LTS binary for this OS and CPU from
+https://nodejs.org/dist/latest-v24.x/. Check its SHA-256 against
+SHASUMS256.txt from the same directory before running it. Keep it inside
+the Sori folder and run serve.cjs with that binary. Use the Windows node.exe
+or the macOS/Linux archive and its bin/node. No admin or system install.
+
+Serve only the site folder, bound to 127.0.0.1. Verify the page responds with
+Sori and open http://127.0.0.1:17841/ in the user's default browser. If Sori
+is already running there from this folder, reuse it. If another process
+uses the port, let the user know. Keep Sori running and give the user the
+address. To reopen it later, repeat the same launch and use the same browser
+and address to see the saved library.

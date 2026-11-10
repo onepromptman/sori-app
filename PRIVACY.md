@@ -1,5 +1,18 @@
 # Privacy and data flow
 
+## Web edition
+
+Sori stores the web library in your browser. Audio is decoded and
+transcribed on the device. The runtime and speech model download from
+jsDelivr and Hugging Face. Adding an RSS feed or opening episode audio
+makes a request to that publisher or media host.
+
+Sori only copies or downloads the text you choose to share with a chat.
+Your chat provider receives it when you submit it there. Files you bring
+back to Sori are stored in the same browser library.
+
+## Desktop edition
+
 Sori is a local browser app. Its server listens only on your own computer.
 It has no hosted account, analytics, advertising, or telemetry service.
 
@@ -7,18 +20,16 @@ It has no hosted account, analytics, advertising, or telemetry service.
 |---|---|
 | Follow a feed or fetch an episode | Requests to that publisher and its media host, including your IP address |
 | Transcribe a local recording | No recording upload by Sori; the selected speech model downloads if needed |
-| Generate Training or enable Auto-train | Transcript text and episode metadata go to Anthropic using your API key; API charges apply |
-| Use Sori in an AI chat client | Content you give that client follows the client's own data policies and plan limits |
-| Install or update dependencies | Requests to package and model download services |
+| Make slides | Sori copies the request and transcript to your clipboard and opens the chat you choose. The chat receives the text when you paste and submit it. |
+| First launch or use of a new speech model | Requests to download the speech model |
+| Use the optional CLI with its API mode | Transcript text and episode metadata go to Anthropic using your API key. API charges apply. |
 
 Transcripts, decks, subscription URLs and settings stay in your Sori folder.
-The API key is stored in `credentials.json` as local, unencrypted JSON. Protect
-your operating system account. Backup or sync software you configure may copy
-this folder; Sori itself does not sync it. Clear the key in Settings to remove it.
+Backup or sync software you configure may copy this folder. If you saved an
+API key in an earlier release or for the CLI, the local `credentials.json` file
+holds it as unencrypted JSON. See [CLI settings](docs/CLI.md) to clear it.
 
 Closing the tab leaves the local app running. Use Settings > Stop to stop it.
-Auto-train is optional and can spend API credits whenever new episodes finish.
-Turn it off for each source to stop future automatic training requests.
 
 Logs are local diagnostics and may include source host names, file names and
 error messages. Review and redact logs before sharing. Do not publish your

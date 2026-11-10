@@ -16,7 +16,9 @@ def test_open_sample_adds_a_readable_library_item_without_overwriting_it(app_mod
 
 
 @pytest.mark.parametrize("cached, available", [(False, True), (True, True), (False, False)])
-def test_speech_setup_reuses_the_cache_and_reports_download_failure(app_mod, monkeypatch, tmp_path, cached, available):
+def test_speech_setup_reuses_the_cache_and_reports_download_failure(
+    app_mod, monkeypatch, tmp_path, cached, available
+):
     from faster_whisper import utils
     from huggingface_hub.errors import LocalEntryNotFoundError
 
@@ -61,3 +63,9 @@ def test_caption_rate_limit_recommends_the_podcast_feed(app_mod, monkeypatch):
     episode = {"id": "ep", "title": "An episode", "kind": "youtube", "url": "https://example.test/watch"}
     with pytest.raises(app_mod.TranscriptionError, match="podcast RSS feed"):
         app_mod.run_transcription(show, episode, {})
+
+
+def test_desktop_slide_flow_blocks_legacy_paid_requests(app_mod):
+    api = app_mod.Api(allow_api_training=False)
+    assert "Make slides" in api.generate_training("unused.txt")["error"]
+    assert "Make slides" in api.set_auto_train("old-subscription", True)["error"]

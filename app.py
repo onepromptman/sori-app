@@ -1324,10 +1324,13 @@ class Api:
     handle back to the Window sends that walk into infinite recursion.
     """
 
-    def __init__(self):
+    def __init__(self, *, allow_api_training: bool = True):
         self._window = None
         self._event_sink = None
-        self._worker = Worker(self._emit, on_transcribed=self._maybe_auto_train)
+        self._allow_api_training = allow_api_training
+        self._worker = Worker(
+            self._emit, on_transcribed=self._maybe_auto_train if allow_api_training else None
+        )
         self._trainer = TrainWorker(self._emit)
         self._stop = threading.Event()
         self._speech_setup = "idle"
@@ -1349,7 +1352,9 @@ class Api:
 
                 try:
                     cached = Path(download_model(model, local_files_only=True, use_auth_token=False))
-                    if not all((cached / name).is_file() for name in ("config.json", "model.bin", "tokenizer.json")):
+                    if not all(
+                        (cached / name).is_file() for name in ("config.json", "model.bin", "tokenizer.json")
+                    ):
                         download_model(model, use_auth_token=False)
                 except LocalEntryNotFoundError:
                     download_model(model, use_auth_token=False)
@@ -1529,6 +1534,8 @@ class Api:
 
     @bridge
     def set_auto_train(self, show_id: str, auto_train: bool) -> dict:
+        if auto_train and not self._allow_api_training:
+            raise ValueError("Open a transcript and choose Make slides to continue in ChatGPT or Claude.")
         with _store_lock:
             data = load_store()
             show = _find_show(data, show_id)
@@ -1844,6 +1851,8 @@ class Api:
         the transcript file itself (+ its .json sidecar), so this works from
         the Library/Reader without needing the original show/episode objects
         still to be around (a show removed or a feed rewound doesn't matter)."""
+        if not self._allow_api_training:
+            raise ValueError("Choose Make slides to continue in ChatGPT or Claude.")
         target = _confine_to_transcripts(transcript_path)
         data = _read_transcript_data(target)
         meta = data.get("meta", {})
@@ -2200,7 +2209,12 @@ def _sweep(say, lines: list[str], log_path: Path, started: datetime) -> int:
     # failure counters below are the current ones, not a pre-network snapshot.
     data = load_store()
 
-    auto_train_ids = {s["id"] for s in data["shows"] if s.get("auto_train")}
+    # The legacy cloud routine explicitly opts into API training. Local
+    # scheduled sweeps ignore saved Auto-train flags from earlier releases.
+    cloud_training = (
+        os.environ.get("SORI_KEY_FROM_ENV") == "1" and os.environ.get("SORI_PROFILE") != "portable"
+    )
+    auto_train_ids = {s["id"] for s in data["shows"] if s.get("auto_train")} if cloud_training else set()
     done = failed = trained = train_failed = 0
     for ep in todo:
         show = _find_show(data, ep["show_id"])
@@ -2272,6 +2286,8 @@ def selftest(include_window: bool = False) -> int:
     # exe (no profile set) still needs all of them.
     profile = os.environ.get("SORI_PROFILE") or "app"
     optional = {"webview", "anthropic"} if profile in ("claude", "captions") else set()
+    if profile == "portable":
+        optional |= {"anthropic", "pptx"}
     if profile == "captions":
         optional |= {"faster_whisper", "ctranslate2", "av", "onnxruntime"}
     lines.append(f"profile: {profile}")
@@ -2310,23 +2326,24 @@ def selftest(include_window: bool = False) -> int:
     # The private deck engine is optional (see themes/README.md): a checkout
     # without engine/ renders with themes/studio and is fully functional, so
     # its absence is reported, never counted as a failure.
-    try:
-        import deck_render
+    if profile != "portable":
+        try:
+            import deck_render
 
-        themes = ", ".join(deck_render.THEMES)
-        if deck_render.deckgen is not None:
-            n = (
-                len(list(deck_render.install_fonts.FONTS_DIR.glob("*.ttf")))
-                if deck_render.install_fonts is not None
-                else 0
-            )
-            detail = f"engine present, {n} font(s) bundled, themes: {themes}"
-        else:
-            detail = f"no engine, themes: {themes}"
-        lines.append(f"  ok    deck_render      {'':<12} (training deck rendering, {detail})")
-    except Exception as exc:
-        failures += 1
-        lines.append(f"  FAIL  deck_render      {'':<12} (training deck rendering) \u2014 {exc}")
+            themes = ", ".join(deck_render.THEMES)
+            if deck_render.deckgen is not None:
+                n = (
+                    len(list(deck_render.install_fonts.FONTS_DIR.glob("*.ttf")))
+                    if deck_render.install_fonts is not None
+                    else 0
+                )
+                detail = f"engine present, {n} font(s) bundled, themes: {themes}"
+            else:
+                detail = f"no engine, themes: {themes}"
+            lines.append(f"  ok    deck_render      {'':<12} (training deck rendering, {detail})")
+        except Exception as exc:
+            failures += 1
+            lines.append(f"  FAIL  deck_render      {'':<12} (training deck rendering) \u2014 {exc}")
 
     lines.append("All backends present." if not failures else f"{failures} backend(s) missing.")
     for line in lines:
@@ -2367,7 +2384,7 @@ def run_window() -> int:
         )
         return 1
 
-    api = Api()
+    api = Api(allow_api_training=False)
     window = webview.create_window(
         APP_NAME,
         str(index),
@@ -2398,7 +2415,7 @@ def run_server(open_browser: bool = True) -> int:
         print(f"UI not found at {ui_dir}", file=sys.stderr)
         return 1
 
-    api = Api()
+    api = Api(allow_api_training=False)
 
     def start() -> None:
         api._start_engine()

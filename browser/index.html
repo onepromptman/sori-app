@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="referrer" content="no-referrer">
+  <meta name="description" content="Transcribe audio in your browser and keep your transcripts and slides together.">
+  <title>Sori</title>
+  <link rel="icon" href="./design/rosette-baek.png" type="image/png">
+  <link rel="stylesheet" href="./sori.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <header class="masthead">
+    <div class="masthead-inner">
+      <a class="wordmark" href="./"><img src="./design/rosette-baek.png" alt="">Sori</a>
+      <nav aria-label="Workspace">
+        <a href="#sources-panel">Sources</a>
+        <a href="#library">Library</a>
+      </nav>
+      <a class="header-action" href="#audio-file">Transcribe a file</a>
+    </div>
+  </header>
+  <main class="workspace">
+      <aside class="rail" id="sources-panel" aria-labelledby="sources-title">
+        <h2 id="sources-title" class="eyebrow">Sources</h2>
+        <form id="source-form">
+          <label for="source-url">Podcast RSS feed or YouTube link</label>
+          <div class="input-row">
+            <input id="source-url" type="text" inputmode="url" placeholder="Paste a link" required>
+            <button type="submit">Add</button>
+          </div>
+        </form>
+        <details class="source-help">
+          <summary>Source options</summary>
+          <p class="small">YouTube links open the original. Use a podcast feed or an audio file to transcribe.</p>
+          <label for="feed-file">Import a saved RSS or Atom file</label>
+          <input id="feed-file" type="file" accept=".rss,.atom,.xml,application/rss+xml,application/atom+xml,application/xml,text/xml">
+        </details>
+        <div id="sources"></div>
+      </aside>
+    <div class="main-pane">
+      <section class="library" id="library" aria-labelledby="library-title">
+        <div class="library-head">
+          <div>
+            <h1 id="library-title">Library</h1>
+            <p>Read a transcript and open its training files.</p>
+          </div>
+          <button id="sample" type="button" aria-label="Try a sample transcript">Open sample</button>
+        </div>
+        <div class="file-bar">
+          <div>
+            <label for="audio-file">Audio or video file</label>
+            <input id="audio-file" type="file" accept="audio/*,video/*,.mp3,.m4a,.wav,.mp4,.ogg,.webm,.flac">
+          </div>
+          <button id="transcribe-file" type="button" class="primary">Transcribe</button>
+          <p class="small">Whisper downloads on first use and transcribes in this browser.</p>
+        </div>
+        <div id="task" class="status" hidden>
+          <p id="task-text" role="status"></p>
+          <progress id="task-progress" max="1" aria-label="Transcription progress"></progress>
+          <button id="cancel" type="button">Cancel</button>
+        </div>
+        <p id="notice" role="status" aria-live="polite" hidden></p>
+        <label for="search" class="visually-hidden">Find a transcript or training file</label>
+        <input id="search" type="search" placeholder="Search transcripts and training files">
+        <div class="library-columns eyebrow" aria-hidden="true"><span>Transcript</span><span>Training</span></div>
+        <div id="transcripts"></div>
+      </section>
+      <section class="reader" id="reader" aria-labelledby="reader-title" hidden>
+      <div class="reader-head">
+        <div>
+          <h2 id="reader-title" tabindex="-1"></h2>
+          <p id="reader-meta" class="small"></p>
+        </div>
+        <div class="actions">
+          <button type="button" id="save-transcript">Download transcript</button>
+          <button type="button" id="remove-transcript" class="subtle">Remove</button>
+        </div>
+      </div>
+      <div class="reader-columns">
+        <section class="reader-column" aria-labelledby="transcript-heading">
+          <h3 class="eyebrow" id="transcript-heading">Transcript</h3>
+          <pre id="reader-text"></pre>
+        </section>
+        <section class="reader-column slide-panel" aria-labelledby="training-heading">
+          <h3 class="eyebrow" id="training-heading">Training</h3>
+          <article id="sample-training" class="sample-training" hidden>
+            <p class="eyebrow">Sample lesson</p>
+            <h4>Explain it in one sentence</h4>
+            <p>Practice turning a short podcast segment into an explanation someone else can follow.</p>
+            <ol>
+              <li>Write one sentence that captures the main idea.</li>
+              <li>Ask a listener what they understood.</li>
+              <li>Revise your sentence using their feedback.</li>
+            </ol>
+            <p class="small">Review question. What should you do before teaching the idea?</p>
+          </article>
+          <div id="slide-results"></div>
+          <label id="slide-drop" class="drop" for="slide-files">Choose or drop a finished deck or guide</label>
+          <input id="slide-files" type="file" accept=".pptx,.md,.txt,.pdf,.docx,.json" multiple>
+          <details class="make-slides">
+            <summary>Make slides in ChatGPT or Claude</summary>
+            <p>Paste the request into your chat to share the transcript. Bring back the files when they’re ready.</p>
+            <div class="actions">
+              <button type="button" id="copy-slide-request">Copy slide request</button>
+              <button type="button" id="save-slide-request">Download request</button>
+              <a href="https://chatgpt.com/" target="_blank" rel="noopener noreferrer">Open ChatGPT</a>
+              <a href="https://claude.ai/new" target="_blank" rel="noopener noreferrer">Open Claude</a>
+            </div>
+          </details>
+          <p id="import-status" role="status" hidden></p>
+        </section>
+      </div>
+      </section>
+    </div>
+  </main>
+  <footer>Saved in this browser. Download anything you want to keep outside it.</footer>
+  <dialog id="confirm">
+    <form method="dialog">
+      <h2 id="confirm-title">Remove this item?</h2>
+      <p id="confirm-text"></p>
+      <div class="actions">
+        <button value="cancel" autofocus>Cancel</button>
+        <button value="remove" class="danger">Remove</button>
+      </div>
+    </form>
+  </dialog>
+</body>
+</html>

@@ -1,5 +1,12 @@
 # Changelog
 
+## 3.4.1 (browser beta, prepared)
+
+- Start in the browser on Mac or Windows and try a bundled transcript from the first screen.
+- Prepare the default Whisper model in the background without Ollama or an AI account.
+- Create a lesson from the reader. Copy a prompt to your AI chat or connect Claude there for editable slides and a study guide.
+- Lead with podcast RSS and suggest it if YouTube limits caption requests.
+
 ## 3.4.0 (public browser beta)
 
 - Reconcile the optional CLI/plugin training pipeline with the released browser app.

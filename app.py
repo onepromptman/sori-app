@@ -620,6 +620,11 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
         except ImportError as exc:
             raise TranscriptionError("yt-dlp isn't installed, so captions can't be fetched.") from exc
         except Exception as exc:
+            if re.search(r"\bHTTP Error 429\b", str(exc), re.IGNORECASE):
+                raise TranscriptionError(
+                    "YouTube is limiting caption requests. Try later, or add the show's podcast RSS feed "
+                    "to transcribe its audio."
+                ) from exc
             raise TranscriptionError(f"Couldn't reach YouTube: {exc}") from exc
         if not segments:
             raise TranscriptionError("This video has no captions yet.")
@@ -1325,6 +1330,39 @@ class Api:
         self._worker = Worker(self._emit, on_transcribed=self._maybe_auto_train)
         self._trainer = TrainWorker(self._emit)
         self._stop = threading.Event()
+        self._speech_setup = "idle"
+
+    def _start_speech_setup(self) -> None:
+        settings = load_store()["settings"]
+        model = DEFAULT_SETTINGS["model"]
+        device = DEFAULT_SETTINGS["device"]
+        if settings.get("model") != model or settings.get("device") != device:
+            return
+        if tx.whisper_backend(device) != "faster":
+            return
+        self._speech_setup = "preparing"
+
+        def prepare() -> None:
+            try:
+                from faster_whisper.utils import download_model
+                from huggingface_hub.errors import LocalEntryNotFoundError
+
+                try:
+                    cached = Path(download_model(model, local_files_only=True, use_auth_token=False))
+                    if not all((cached / name).is_file() for name in ("config.json", "model.bin", "tokenizer.json")):
+                        download_model(model, use_auth_token=False)
+                except LocalEntryNotFoundError:
+                    download_model(model, use_auth_token=False)
+                self._speech_setup = "ready"
+            except Exception as exc:
+                log.info("Background speech model setup did not finish (%s)", type(exc).__name__)
+                self._speech_setup = "deferred"
+
+        threading.Thread(target=prepare, name="speech-setup", daemon=True).start()
+
+    @bridge
+    def speech_setup(self) -> str:
+        return self._speech_setup
 
     def _maybe_auto_train(self, show: dict, episode: dict, transcript_path: Path) -> None:
         """Called by Worker right after a successful transcription. Chains
@@ -1577,6 +1615,7 @@ class Api:
             "model": settings.get("model", DEFAULT_SETTINGS["model"]),
             "lang": settings.get("lang", DEFAULT_SETTINGS["lang"]),
             "transcripts_dir": str(transcripts_dir()),
+            "native_pickers": os.name == "nt" or self._window is not None,
         }
 
     @bridge
@@ -1848,6 +1887,23 @@ class Api:
     @bridge
     def list_transcripts(self) -> list[dict]:
         return list_transcripts()
+
+    @bridge
+    def open_sample(self) -> str:
+        source = app_dir() / "examples" / "sample-transcripts" / "01-explain-an-idea.txt"
+        sample = source.read_bytes()
+        root = transcripts_dir().resolve()
+        folder = (root / "Sori Samples").resolve()
+        if folder.parent != root:
+            raise ValueError("The samples folder is outside your transcript folder.")
+        folder.mkdir(exist_ok=True)
+        target = folder / source.name
+        try:
+            with target.open("xb") as output:
+                output.write(sample)
+        except FileExistsError:
+            pass  # Never replace a sample the user already has.
+        return str(_confine_to_transcripts(str(target)))
 
     @bridge
     def open_transcript(self, path: str) -> dict:
@@ -2344,7 +2400,12 @@ def run_server(open_browser: bool = True) -> int:
 
     api = Api()
 
-    code = webserver.run(api, ui_dir, state_dir(), api._start_engine, open_browser=open_browser)
+    def start() -> None:
+        api._start_engine()
+        if open_browser:
+            api._start_speech_setup()
+
+    code = webserver.run(api, ui_dir, state_dir(), start, open_browser=open_browser)
     api._shutdown()
     return code
 

@@ -22,12 +22,12 @@ def main(argv=None):
         print(f"Sori could not start: {exc}", file=sys.stderr)
         return 2
     if "--selftest" not in args:
-        for notice in preflight.notices("browser", "base.en"):
-            preflight.say(notice)
         preflight.say(
             "2 of 2: Starting the local app."
             + ("" if "--no-browser" in args else " Your browser will open automatically.")
         )
+        if "--no-browser" not in args:
+            preflight.say("Sori prepares the default speech model in the background if needed.")
         preflight.say("If no tab opens, visit http://127.0.0.1:17654 (unless you changed SORI_PORT).")
         preflight.say("Keep this window open while using Sori. Use Settings > Stop when finished.")
     try:

@@ -377,6 +377,11 @@ a:hover{color:var(--ink)}
 .reader-title{margin:16px 0 0;font:400 27px/1.25 var(--font-display);letter-spacing:.005em;position:relative;text-wrap:pretty}
 .reader-meta-row{margin-top:10px;display:flex;align-items:center;gap:14px;flex-wrap:wrap;position:relative}
 .reader-meta{font:400 11px/1 var(--font-mono);color:rgba(var(--ink-rgb),.58)}
+#reader-training-setup{margin-top:14px;padding:12px 16px;border:1px solid var(--line);font-size:13px;line-height:1.5}
+#reader-training-setup p{margin:0 0 8px}
+#reader-training-setup a{color:var(--cobalt);text-decoration:underline}
+#reader-training-key{max-width:260px;margin:4px}
+#speech-setup-status{margin:8px 0}
 .reader-toolbar{flex:0 0 auto;display:flex;align-items:center;gap:16px;padding:12px 32px;border-bottom:1px solid var(--line-soft);background:rgba(var(--ink-rgb),.02)}
 .reader-toolbar .search{flex:0 1 300px}
 .reader-match{font:400 11px/1 var(--font-mono);color:var(--ink-faint)}
@@ -430,7 +435,7 @@ a:hover{color:var(--ink)}
           </button>
         </div>
         <div class="add-field" id="add-field">
-          <input id="add-input" type="text" spellcheck="false" placeholder="Paste a YouTube channel, RSS, or link">
+          <input id="add-input" type="text" spellcheck="false" aria-label="Podcast feed or YouTube channel" placeholder="Paste a podcast RSS feed">
           <button id="add-btn" title="Add source">↵</button>
         </div>
         <div class="add-hint" id="add-hint">Press Enter to add</div>
@@ -439,7 +444,7 @@ a:hover{color:var(--ink)}
         <div class="add-menu hidden" id="add-menu">
           <button class="add-menu-item" data-act="focus-add">
             <span class="label">Paste a link</span>
-            <span class="hint">YouTube channel, RSS, episode URL</span>
+            <span class="hint">Podcast RSS feed or YouTube channel</span>
           </button>
           <button class="add-menu-item" data-act="new-folder">
             <span class="label">New folder</span>
@@ -485,6 +490,7 @@ a:hover{color:var(--ink)}
             <button class="btn-primary-sm" id="transcribe-btn" disabled>Transcribe selected</button>
           </div>
         </div>
+        <p class="settings-row-desc hidden" id="speech-setup-status" role="status"></p>
         <ul class="eps" id="episode-list"></ul>
       </div>
 
@@ -501,7 +507,7 @@ a:hover{color:var(--ink)}
 
       <div class="pane hidden" id="pane-settings">
         <div class="settings-wrap">
-          <div class="settings-section-head">Model</div>
+          <div class="settings-section-head">Speech quality</div>
           <div class="model-list" id="model-list"></div>
 
           <div class="settings-section-head second">Transcription</div>
@@ -522,7 +528,7 @@ a:hover{color:var(--ink)}
             </div>
           </div>
 
-          <div class="settings-section-head second">Training generation</div>
+          <div class="settings-section-head second">Optional AI lessons</div>
           <div class="settings-rows">
             <div class="settings-row">
               <div>
@@ -534,8 +540,8 @@ a:hover{color:var(--ink)}
               </div>
             </div>
             <div class="settings-row">
-              <input class="settings-input" id="training-key-input" type="password"
-                     autocomplete="off" spellcheck="false" placeholder="sk-ant-…">
+              <input class="settings-input" id="training-key-input" type="password" aria-label="Claude API key"
+                     autocomplete="off" spellcheck="false" placeholder="Paste your API key">
               <button class="btn-outline-lg" id="training-key-save">Save</button>
               <button class="btn-outline-lg" id="training-key-clear">Clear</button>
             </div>
@@ -579,14 +585,27 @@ a:hover{color:var(--ink)}
               <button class="btn-outline" id="reader-md">.md</button>
               <button class="btn-outline" id="reader-srt">.srt</button>
               <button class="btn-outline" id="reader-txt">.txt</button>
-              <button class="btn-primary-sm" id="reader-train">Generate Training</button>
+              <button class="btn-primary-sm" id="reader-train" aria-controls="reader-training-setup" aria-expanded="false">Create a lesson</button>
             </div>
           </div>
           <h1 class="reader-title" id="reader-title"></h1>
           <div class="reader-meta-row">
             <span class="reader-meta" id="reader-meta"></span>
-            <span class="reader-meta" id="reader-train-status"></span>
+            <span class="reader-meta" id="reader-train-status" role="status"></span>
           </div>
+          <form class="hidden" id="reader-training-setup">
+            <p>Already use ChatGPT or Claude? <button class="btn-outline" id="reader-lesson-prompt" type="button">Copy lesson prompt</button>
+              and paste it in your chat. The copy includes this transcript.</p>
+            <p>For editable slides and a study guide directly in Sori, connect Claude.
+              Generating a lesson this way sends the transcript to Anthropic and uses paid API credits.</p>
+            <p><a href="https://platform.claude.com/docs/en/get-api-key" target="_blank" rel="noopener noreferrer">Get a Claude API key</a>,
+              then paste it here. Saving the key does not send a transcript.</p>
+            <label for="reader-training-key">Claude API key</label>
+            <input class="settings-input" id="reader-training-key" type="password" required
+                   autocomplete="off" spellcheck="false">
+            <button class="btn-primary-sm" id="reader-training-save" type="submit">Save key</button>
+            <button class="btn-outline" id="reader-training-cancel" type="button">Cancel</button>
+          </form>
         </div>
         <div class="reader-toolbar">
           <div class="search">

@@ -1,45 +1,51 @@
 START HERE - SORI
 =================
 
-ON WINDOWS
+OPEN SORI IN YOUR BROWSER
 
-1. Right-click Sori-browser.zip and choose Extract All.
-2. Open the extracted Sori folder and double-click START SORI.bat.
-   If Windows hides extensions, look for START SORI (Windows Batch File).
+1. Unzip Sori-browser.zip. On Mac, double-click it. On Windows,
+   right-click it and choose Extract All.
+2. Open the extracted Sori folder and start Sori:
+   Mac: open START SORI.command.
+   Windows: open START SORI.bat (Windows Batch File).
 
 Sori opens in your usual browser. Leave the separate launcher window open.
 The first start needs internet and can take a few minutes. If the launcher
-asks for Python, install Python 3.11 or newer from python.org/downloads/,
-include the Python launcher, then double-click START SORI.bat again.
+asks for Python, install Python 3.11 or newer from python.org/downloads/
+and open the launcher again. On Windows, include the Python launcher.
 
 Prefer help from a desktop assistant that can run commands on your computer?
-Point it to the ZIP in Downloads and say: "Extract Sori-browser.zip from
-Downloads, run START SORI.bat from the extracted Sori folder, and open Sori
-in my browser. Tell me if Python is missing." A web chat upload alone cannot
-start Sori on your computer.
+Point it to the ZIP in Downloads and say: "Extract Sori-browser.zip and
+start Sori on this computer. Open it in my browser and tell me if Python
+is missing." A web chat upload alone cannot start Sori on your computer.
 
-Paste a podcast RSS feed, pick an episode and click Transcribe.
-Open Library to read the transcript. The first audio job downloads
-a speech model. No Sori account or API key is needed for transcription.
+TRY IT: click Try a sample transcript, or paste a podcast RSS feed under
+Sources, press Enter, and choose Transcribe. Find the result in Library.
+The default English speech model downloads in the background if needed.
+Transcription needs no Sori account, API key, or Ollama.
+
+If YouTube limits captions, add the show's podcast RSS feed instead.
+For The AI Daily Brief, paste https://anchor.fm/s/f7cac464/podcast/rss.
 
 TRY THE SAMPLES: open the SAMPLES folder for four fictional transcripts.
 Read any TXT file immediately, or follow SAMPLES/README.md to add them to
 your Library. These examples contain no real person's recordings.
 
 FINISHED? Use Settings > Stop. Closing just the tab leaves Sori running.
-START AGAIN? Double-click START SORI.bat again.
+START AGAIN? Open the same launcher again.
 
 Keep the app folder beside the launcher. It contains the program files;
 you do not need to open it. Your recordings and library are stored separately.
 
-macOS/Linux: run sh "START SORI.command" from this folder. Those platforms
-have not received the Windows acceptance checks. Local file pickers require
-Windows.
+Terminal on Mac or Linux: run sh "START SORI.command" from this folder.
+Mac and Linux are still in beta. Local file pickers require Windows.
 
-OPTIONAL TRAINING sends transcripts to Anthropic and uses your paid API
-credits. Read PRIVACY.md. Review generated material against its source.
+OPTIONAL: open any transcript and choose Create a lesson. Copy the lesson
+prompt into your AI chat, or connect Claude to generate slides and a study
+guide in Sori. Creating them in Sori sends the transcript to Anthropic and
+uses paid API credits. Read PRIVACY.md and review the result.
 
-This is the 3.4.0 public browser beta. A new Windows EXE is not included.
+This is the 3.4.1 browser beta. A Windows EXE is not included in this ZIP.
 The optional paid training route has not had a live paid acceptance test.
 
 Help and source: https://github.com/onepromptman/sori-app

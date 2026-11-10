@@ -7,23 +7,37 @@ training decks and self-study guides.
 Built by [OnePromptMan](https://github.com/onepromptman). Open source under the
 MIT license. Local transcription needs no Sori account or API key.
 
-## Open Sori on Windows
+## Open Sori in your browser
+
+Sori opens in your browser and runs on your computer. You do not need an
+account, an AI subscription, or Ollama to read or transcribe episodes.
 
 1. [Download Sori-browser.zip](https://github.com/onepromptman/sori-app/releases/download/v3.4.0/Sori-browser.zip).
-2. Right-click the ZIP and choose **Extract All**.
-3. Open the extracted **Sori** folder and double-click **START SORI.bat**.
-   If Windows hides extensions, look for **START SORI** with type **Windows Batch File**.
+2. Unzip it. On Mac, double-click the ZIP. On Windows, right-click it and choose **Extract All**.
+3. Open the extracted **Sori** folder. On Mac, open **START SORI.command**.
+   On Windows, open **START SORI.bat**. For Linux or a Mac that cannot open
+   the launcher, see [Terminal launch](#terminal-launch).
 
-Sori opens in your usual browser. Leave the separate launcher window open.
-The first start needs internet and can take a few minutes. If the launcher asks
-for Python, install [Python 3.11 or newer](https://www.python.org/downloads/),
-include the Python launcher, then double-click **START SORI.bat** again.
+Leave the separate launcher window open. The first start needs internet and can
+take a few minutes. If Sori asks for Python, install
+[Python 3.11 or newer](https://www.python.org/downloads/) and open the launcher again.
+On Windows, include the Python launcher.
 
-To try it, paste a podcast RSS feed, pick an episode, and click **Transcribe**.
-Open **Library** to read it. The first audio transcription downloads a speech model.
+### Try your first transcript
 
-This is the [3.4.0 browser beta](https://github.com/onepromptman/sori-app/releases/tag/v3.4.0).
-For macOS or Linux, see [Run from source](#run-from-source).
+Click **Try a sample transcript** to explore the Library right away. Sori prepares
+its default English speech model in the background on a normal launch if needed
+(about 150 MB). No separate model install is required.
+
+For a real episode, paste a podcast RSS feed into **Sources**, press Enter, and
+click **Transcribe**. Open **Library** when it's ready. For example, copy
+`https://anchor.fm/s/f7cac464/podcast/rss` for The AI Daily Brief. If YouTube
+limits caption requests, use the show's podcast RSS feed where available.
+
+The [published 3.4.0 beta](https://github.com/onepromptman/sori-app/releases/tag/v3.4.0)
+downloads the model when you first transcribe and labels its lesson button
+**Generate Training**. The updated setup and lesson shortcuts described here
+are in the 3.4.1 beta build from this source. Mac and Linux are still in beta.
 
 ### Let a desktop assistant open it
 
@@ -31,8 +45,9 @@ If you already use a desktop assistant that can run commands on your computer,
 save **Sori-browser.zip** to Downloads, give the assistant access to that folder,
 and say:
 
-> Extract Sori-browser.zip from Downloads, run START SORI.bat from the
-> extracted Sori folder, and open Sori in my browser. Tell me if Python is missing.
+> Extract Sori-browser.zip from Downloads and start Sori on this computer.
+> Use START SORI.command on Mac or START SORI.bat on Windows. Open Sori in my
+> browser and tell me if Python is missing.
 
 Use a local Codex or ChatGPT Work session, or a local Claude Code session.
 The assistant may ask for permission to run the launcher. Uploading the ZIP to
@@ -62,10 +77,15 @@ They demonstrate learning activities, not measured transcription accuracy.
 
 ## From listening to learning
 
-Open a transcript in Library and choose **Generate Training**. With your own
-Claude API key saved in Settings, Sori requests an editable slide deck and a
-study guide with learning objectives, key concepts, a practice exercise,
-retrieval questions, a separate answer key, and suggested review sessions.
+Open a transcript and choose **Create a lesson**. You can copy the lesson prompt
+and transcript into ChatGPT or Claude using **Copy lesson prompt**, with no Sori
+API setup. Paste only transcripts you are comfortable sharing with that service.
+
+To generate editable slides and a study guide directly in Sori, add your
+[Claude API key](https://platform.claude.com/docs/en/get-api-key) from the same
+screen. Save the key, choose **Create a lesson** again, and confirm. Sori provides
+learning objectives, key concepts, a practice exercise, review questions, and a
+separate answer key.
 
 This beta's paid training route has automated mocked tests but has not received
 a live paid acceptance test. Current account and model access remain unverified.
@@ -126,10 +146,11 @@ own environment and starts the local server:
 python start_sori.py
 ```
 
-In the source checkout, use `python3 start_sori.py` on macOS/Linux.
-In the browser ZIP, use `sh "START SORI.command"` from the extracted Sori folder.
-macOS and Linux have not received the Windows acceptance checks. The app's
-local file picker buttons currently require Windows.
+#### Terminal launch
+
+From the extracted **Sori** folder on macOS or Linux, run `sh "START SORI.command"`.
+In a source checkout, use `python3 start_sori.py` instead. The app's local file
+picker buttons currently require Windows; podcast RSS works without a picker.
 
 For a manually managed environment on Windows:
 

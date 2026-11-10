@@ -27,7 +27,7 @@ EXCLUDES = [
 ]
 
 # Public builds always use the bundled studio theme.
-datas = [('ui', 'ui')]
+datas = [('ui', 'ui'), ('examples/sample-transcripts/01-explain-an-idea.txt', 'examples/sample-transcripts')]
 hiddenimports = ['sori_log', 'transcribe', 'training', 'deck_render', 'themes',
                   'themes.studio']
 binaries = []

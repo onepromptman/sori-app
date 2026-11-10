@@ -1,5 +1,16 @@
 # Changelog
 
+## 3.4.0 (public browser beta)
+
+- Reconcile the optional CLI/plugin training pipeline with the released browser app.
+- Add curriculum triage, evidence-checked learning briefs, stage tracking and
+  offline or manual design handoffs without private project dependencies.
+- Keep browser launchers, four fictional samples, origin checks and the engine lock.
+- Constrain optional launcher installs to tested pins and refresh those pins on update.
+- Add optional macOS MLX transcription and explicit cloud environment-key opt-in.
+- Keep unavailable deck themes from triggering paid generation.
+
+
 ## 3.2.2 (public browser beta)
 
 - Include four clearly labeled fictional sample transcripts and instructions

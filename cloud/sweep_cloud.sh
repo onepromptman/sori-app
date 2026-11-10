@@ -9,10 +9,12 @@
 # - cloud/guard.py refuses to run if any subscribed show is not a YouTube
 #   show (this profile has no Whisper).
 # - ANTHROPIC_API_KEY is optional and stays in the environment; this script
-#   never prints or copies it. Today app.sweep() reads the key from
-#   credentials.json only, so an env key does NOT enable training yet (see
-#   cloud/ROUTINE.md, "Before the paid run"); an auto-train show logs
-#   "training failed: No Claude API key set" and spends nothing.
+#   never prints or copies it. app.anthropic_api_key() reads the environment
+#   only when SORI_KEY_FROM_ENV=1, which this script exports when a key is
+#   present, so the cloud sweep can train auto-train shows (paid, one call per
+#   new video) without a credentials.json ever existing in the output repo.
+#   The desktop sweep never sets the opt-in, so a stray shell key there spends
+#   nothing.
 # - --dry-run does everything except `git push`.
 set -euo pipefail
 
@@ -46,8 +48,8 @@ echo "output repo: $SORI_OUTPUT_DIR"
 echo "state:       $SORI_HOME"
 echo "python:      $PY"
 if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
-  echo "api key:     present in env, but the sweep does not read it yet;"
-  echo "             auto-train shows will log 'training failed' (see cloud/ROUTINE.md)"
+  export SORI_KEY_FROM_ENV=1
+  echo "api key:     present in env; auto-train shows WILL make a paid Claude call per new video"
 else
   echo "api key:     not set (auto-train shows will log 'training failed', nothing spent)"
 fi

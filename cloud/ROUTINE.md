@@ -74,14 +74,14 @@ You are running the Sori captions-only sweep. Do exactly this and nothing else.
    "saved:" path; each "failed:" or "training failed:" line with its reason;
    each "! <show>:" feed error; whether the push happened. If the script
    exited 3, say which show the guard refused and stop. If it exited non-zero
-   for any other reason, paste the last 30 lines of ./sori-output/state/sweep.log.
+   for any other reason, summarize the failure without exposing credentials or private transcript content.
 Do not add shows, edit shows.json, change settings, or run anything else.
 ```
 
-Do **not** put `python3 app.py --selftest` in the routine as a health check:
-it reports `faster_whisper` and `webview` as missing under this profile and
-exits 1 by design. `cloud/guard.py` plus the sweep's own exit code are the
-health check.
+For a captions-only selftest set SORI_PROFILE=captions before running
+`python3 app.py --selftest`. The guard and sweep exit codes remain the runtime
+checks. Never paste raw logs into a public report; review and redact source
+paths, source identifiers and errors before sharing.
 
 ## Procedure: dry run first, training disabled
 
@@ -101,19 +101,9 @@ health check.
 
 ## Before the paid run
 
-- **Blocker (cross-lane, `app.py`):** the sweep's auto-train path resolves
-  the key through `app.anthropic_api_key()`, which reads `credentials.json`
-  only. Until it falls back to `ANTHROPIC_API_KEY`, a cloud run with an
-  auto-train show fails with "No Claude API key set" rather than spending.
-  That is a safe failure, but the paid run cannot succeed before the
-  fallback lands. Do not work around it by writing `credentials.json` into
-  the runner: the whole point is that the key never touches the output repo.
-  Any fallback must be gated to the cloud entrypoint (an explicit opt-in that
-  only `sweep_cloud.sh` sets) rather than a bare `os.environ` read in
-  `app.anthropic_api_key()`: that function also serves the desktop app's
-  scheduled `--sweep` over the owner's real shows, and a bare read would let a
-  stray shell `ANTHROPIC_API_KEY` turn on paid auto-train without a key ever
-  being entered in Settings. Which design lands is the owner's call (spend).
+- **Environment key opt-in implemented:** the cloud wrapper sets SORI_KEY_FROM_ENV=1
+  when a key is present. Auto-train can incur charges. A dry run suppresses push,
+  not paid calls; omit the key and disable auto_train for a no-spend test.
 - **Unverified on Linux:** deck rendering has been run only on Windows
   (`deck_render.install_fonts` writes to the Windows user font folder).
   Expect the first paid run to be a fact-finding run; budget one call.

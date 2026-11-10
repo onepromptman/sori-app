@@ -34,7 +34,7 @@ and their local file pickers have not received Windows acceptance checks.
 OPTIONAL TRAINING sends transcripts to Anthropic and uses your paid API
 credits. Read PRIVACY.md. Review generated material against its source.
 
-This is the 3.2.2 public browser beta. A new Windows EXE is not included.
+This is the 3.4.0 public browser beta. A new Windows EXE is not included.
 The optional paid training route has not had a live paid acceptance test.
 
 Help and source: https://github.com/onepromptman/sori-app

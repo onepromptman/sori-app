@@ -1,0 +1,3 @@
+# Optional CLI and plugin environment.
+-r requirements.txt
+python-pptx==1.0.2

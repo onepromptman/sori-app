@@ -12,6 +12,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 REQ_FILES = (
     "requirements.txt",
+    "requirements-claude.txt",
+    "requirements-mac.txt",
     "requirements-browser.txt",
     "requirements-app.txt",
     "requirements-captions.txt",

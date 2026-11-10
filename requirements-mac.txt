@@ -1,0 +1,3 @@
+# Optional arm64 macOS transcription backend.
+-c requirements.lock
+mlx-whisper==0.4.3

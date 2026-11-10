@@ -124,3 +124,21 @@ the browser ZIP, with instructions for reading them or adding them to Library.
 They are authored examples, not output from real podcast recordings. Packaging
 regression checks verify that samples match the tracked source. No personal
 library, API key, recording or application state is bundled.
+
+## Integrated 3.4 browser and pipeline checks, 2026-11-10
+
+PASS: 292 automated tests, one optional private-font test skipped. A fresh
+Windows dependency install passed the vulnerability audit, lint and formatting.
+The actual packaged START SORI.bat passed setup, selftest, local browser API,
+four-sample Library reading and clean shutdown from a path containing spaces.
+
+PASS: a separate fresh optional CLI environment passed setup, doctor, profile
+selftest and empty library checks. A fictional brief passed source checking;
+all manual handoff backends wrote local artifacts; the offline route produced
+an actual editable PPTX and study guide and recorded rendering in the ledger.
+No paid API call was made. Plugin manifest validation passed with a nonblocking
+missing-listing-icon warning.
+
+UNVERIFIED: live Claude client delegation/Cowork upload, paid training, external
+slide-provider operations and physical arm64 macOS MLX transcription. External
+design backends are manual local handoffs, not certified integrations.

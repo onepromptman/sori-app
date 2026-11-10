@@ -26,7 +26,7 @@ Three ways to run, plus two CLIs over the same store:
     py settings.py ...   model, lang, transcripts-dir, deck-theme, api-key
                          (the key comes from ANTHROPIC_API_KEY, never argv)
 
-All state lives under %USERPROFILE%\\Sori (never inside the app folder, which
+All state lives under ~/Sori (%USERPROFILE%\\Sori on Windows; never inside the app folder, which
 may be read-only when installed from the packaged EXE). The folder was called
 PodcastStudio before the rename; state_dir() migrates it automatically:
     shows.json                     subscriptions + per-show seen markers
@@ -152,7 +152,21 @@ def save_credentials(data: dict) -> None:
 
 
 def anthropic_api_key() -> str | None:
-    return (load_credentials().get("anthropic_api_key") or "").strip() or None
+    """The key the window, the sweep and Auto-train spend on.
+
+    Saved key first (Settings, or `settings.py api-key set`). The environment
+    is consulted ONLY when SORI_KEY_FROM_ENV=1 is also set: a bare env read
+    here would let a stray shell ANTHROPIC_API_KEY turn on paid Auto-train in
+    the desktop's scheduled sweep without a key ever being entered. The one
+    caller that sets the opt-in is cloud/sweep_cloud.sh, where there is no
+    Settings pane and the key must never be written to disk.
+    """
+    saved = (load_credentials().get("anthropic_api_key") or "").strip()
+    if saved:
+        return saved
+    if os.environ.get("SORI_KEY_FROM_ENV") == "1":
+        return (os.environ.get("ANTHROPIC_API_KEY") or "").strip() or None
+    return None
 
 
 def transcripts_dir() -> Path:
@@ -686,8 +700,27 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
         json.dumps(sidecar, ensure_ascii=False, indent=None),
         encoding="utf-8",
     )
+    _ledger("transcribed", show, episode, by="sweep" if on_progress is None else "window", artifact=out)
     report("done", 1.0)
     return out
+
+
+def _ledger(stage: str, show: dict, episode: dict, by: str, artifact=None, note: str = "") -> None:
+    """Append a pipeline ledger row; never lets a bookkeeping failure fail a job."""
+    try:
+        from pipeline import ledger
+
+        ledger.record(
+            show.get("name", ""),
+            episode.get("id", ""),
+            stage,
+            by,
+            title=episode.get("title", ""),
+            artifact=artifact,
+            note=note,
+        )
+    except Exception:
+        pass
 
 
 # ---------------------------------------------------------------------------
@@ -1949,10 +1982,11 @@ class Api:
 def _open_in_explorer(target: Path) -> None:
     if hasattr(os, "startfile"):
         os.startfile(str(target))  # noqa: S606 - Windows shell open, no user input in argv
-    else:  # pragma: no cover - dev convenience on non-Windows
+    else:  # pragma: no cover - the window is Windows-first; this is for `python app.py` elsewhere
         import subprocess
 
-        subprocess.run(["xdg-open", str(target)], check=False)
+        opener = "open" if sys.platform == "darwin" else "xdg-open"
+        subprocess.run([opener, str(target)], check=False)
 
 
 # ---------------------------------------------------------------------------
@@ -2101,6 +2135,7 @@ def _sweep(say, lines: list[str], log_path: Path, started: datetime) -> int:
     for ep in result["episodes"]:
         flag = "auto" if ep["show_id"] in auto_ids else "manual"
         say(f"  - [{flag}] {ep['show_name']}: {ep['date']} {ep['title']}")
+        _ledger("discovered", {"name": ep["show_name"]}, ep, by="sweep", note=flag)
 
     if skipped:
         say(f"{skipped} episode(s) left for manual review (show not set to auto).")
@@ -2175,6 +2210,15 @@ def selftest(include_window: bool = False) -> int:
         f"({'found' if (app_dir() / 'ui' / 'index.html').exists() else 'MISSING'})"
     )
 
+    # sori.py sets SORI_PROFILE to the dependency profile it installed. The
+    # `claude` profile has no window and no API client on purpose, so those
+    # two are reported as "skip" there instead of counted as failures; the
+    # exe (no profile set) still needs all of them.
+    profile = os.environ.get("SORI_PROFILE") or "app"
+    optional = {"webview", "anthropic"} if profile in ("claude", "captions") else set()
+    if profile == "captions":
+        optional |= {"faster_whisper", "ctranslate2", "av", "onnxruntime"}
+    lines.append(f"profile: {profile}")
     checks = [
         ("yt_dlp", "YouTube captions"),
         ("faster_whisper", "local transcription"),
@@ -2193,8 +2237,13 @@ def selftest(include_window: bool = False) -> int:
             version = getattr(mod, "__version__", "?")
             lines.append(f"  ok    {module:<16} {version:<12} ({what})")
         except Exception as exc:
+            if module in optional:
+                lines.append(f"  skip  {module:<16} {'':<12} ({what}; not part of the {profile} profile)")
+                continue
             failures += 1
             lines.append(f"  FAIL  {module:<16} {'':<12} ({what}) \u2014 {exc}")
+    if tx.whisper_backend() == "mlx":
+        lines.append(f"  ok    mlx_whisper      {'':<12} (local transcription on Apple silicon; selected)")
 
     # Not third-party packages, so not in `checks` above: prove the app's own
     # new modules import cleanly in a frozen build too, and that the vendored

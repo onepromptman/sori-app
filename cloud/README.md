@@ -54,8 +54,8 @@ Notes on that layout:
 - `state/credentials.json` must never exist in this repo. The script refuses
   to commit if the file exists and is not gitignored (exit 4). It also refuses
   unignored corrupt-store backups, including numbered backups. The API key
-  would need to reach the engine through the `ANTHROPIC_API_KEY` environment
-  variable after the open item below is resolved.
+  reaches the engine through the `ANTHROPIC_API_KEY` environment variable only
+  when `SORI_KEY_FROM_ENV=1` is set. The cloud wrapper sets that opt-in when a key exists.
 
 ## Running it by hand (from a Sori checkout)
 
@@ -69,17 +69,13 @@ SORI_OUTPUT_DIR=/path/to/sori-output bash cloud/sweep_cloud.sh             # pus
 non-YouTube show, 4 credentials file at risk of being committed; anything
 else is the sweep or git failing under `set -e`.
 
-## Open item before the paid run
+## Before the paid run
 
-`app.sweep()` resolves the training key through `app.anthropic_api_key()`,
-which reads `credentials.json` only; there is no `ANTHROPIC_API_KEY`
-fallback on that path today (`train.py` has one, the sweep does not). So in
-the cloud the transcript half works now and the auto-train half needs a
-change in `app.py` before the first paid run. Any fallback must be gated to
-the cloud entrypoint (an explicit opt-in that only `sweep_cloud.sh` sets)
-rather than a bare `os.environ` read in `app.anthropic_api_key()`: that
-function also serves the desktop app's scheduled `--sweep` over your real
-shows, and a bare read would let a stray shell `ANTHROPIC_API_KEY` turn on
-paid auto-train without a key ever being entered in Settings. Which design
-lands is the owner's call (spend).
-The dry-run procedure in `ROUTINE.md` does not depend on it.
+The cloud wrapper explicitly enables SORI_KEY_FROM_ENV=1 when an environment
+key is present. Only shows with auto_train enabled can use it. Ordinary browser
+startup does not set the opt-in. A saved key takes precedence over the environment.
+
+This route has unit coverage, but no live paid cloud acceptance test. Obtain
+authorization for the intended transcript sharing and API spend before enabling
+auto-training. The --dry-run flag suppresses Git push; it does not suppress model
+calls. For a no-spend test, omit the key and disable auto_train.

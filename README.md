@@ -24,9 +24,9 @@ Sori is a **local browser app**. Download it, start its local engine, and use
 it in your normal browser. Audio processing and your library stay on your
 computer. The Windows EXE is an optional launcher, not the primary product.
 
-**Browser edition: 3.2.2 public beta.**
-[Download Sori-browser.zip](https://github.com/onepromptman/sori-app/releases/download/v3.2.2/Sori-browser.zip)
-or read the [release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.2.2).
+**Browser edition: 3.4.0 public beta.**
+[Download Sori-browser.zip](https://github.com/onepromptman/sori-app/releases/download/v3.4.0/Sori-browser.zip)
+or read the [release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.4.0).
 
 1. Download **Sori-browser.zip** and extract the whole folder.
 2. Install [Python 3.11 or newer](https://www.python.org/downloads/) if you
@@ -63,8 +63,7 @@ builder. On macOS/Linux, see the source launcher below; those platforms have
 not received the Windows acceptance checks. Local file-picker buttons currently
 require Windows. Podcast RSS and the command-line routes are separate from them.
 
-**Optional Windows EXE:** developers can build a bundled launcher with
-`--windows-exe`. This 3.2.2 browser release does not include a new EXE;
+**Optional Windows EXE:** a bundled launcher can be built from source. This 3.4.0 browser release does not include a new EXE;
 the older release's executable is not the current browser package.
 
 YouTube captions work when the source offers accessible captions in your
@@ -158,6 +157,14 @@ The server binds only `127.0.0.1:17654`. It checks the Host header, request
 origin and a per-launch token. Do not expose it through a public reverse proxy.
 Set `SORI_PORT` for a different port or `SORI_HOME` for an isolated data folder.
 `--window` opens the older desktop window; `--sweep` runs one scheduled pass.
+
+### Optional training pipeline
+
+The additional CLI/plugin workflow records stages, checks evidence in a learning
+brief, and creates an offline deck or local handoff for another slide tool.
+It does not run an unattended browser agent. See [pipeline](docs/PIPELINE.md)
+and [optional launcher](docs/CLAUDE-NATIVE.md). External handoffs are manual and
+client usage costs still apply.
 
 ### Claude plugin and command line
 

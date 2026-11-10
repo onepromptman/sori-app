@@ -5,7 +5,7 @@
 
 [project]
 name = "sori"
-version = "3.2.2"
+version = "3.4.0"
 description = "Podcasts and YouTube into transcripts (free, local) and training decks (with a Claude key)."
 requires-python = ">=3.11"
 license = { text = "MIT" }
@@ -15,6 +15,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+claude = ["python-pptx==1.0.2"]
+mac = ["mlx-whisper==0.4.3"]
 browser = [
     "anthropic==0.89.0",
     "python-pptx==1.0.2",

@@ -207,7 +207,7 @@ def install_requirements(venv: Path, files: List[str]) -> Optional[str]:
             code = _run([uv, "pip", "install", "--python", str(py), "-r", str(req)])
         else:
             code = _run(
-                [str(py), "-m", "pip", "install", "--quiet", "--disable-pip-version-checks", "-r", str(req)]
+                [str(py), "-m", "pip", "install", "--quiet", "--disable-pip-version-check", "-r", str(req)]
             )
         if code != 0:
             return "installing %s failed (see above)" % name

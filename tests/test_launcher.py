@@ -142,3 +142,21 @@ def test_root_scripts_exist_for_every_verb():
         assert (sori.ROOT / parts[0]).is_file(), verb
     assert os.environ.get("SORI_HOME")  # conftest isolation is in force
     assert Path(sys.executable).exists()
+
+
+def test_pip_fallback_accepts_its_command_line_without_network(monkeypatch, tmp_path):
+    """Exercise pip's real argument parser, including hosts without uv."""
+    import subprocess
+
+    (tmp_path / "requirements-empty.txt").write_text("# no dependencies\n", encoding="utf-8")
+    monkeypatch.setattr(sori, "ROOT", tmp_path)
+    monkeypatch.setattr(sori, "uv_path", lambda: None)
+    monkeypatch.setattr(sori, "venv_python", lambda venv=None: Path(sys.executable))
+
+    def local_dry_run(command):
+        result = subprocess.run(command + ["--dry-run", "--no-index"], capture_output=True, text=True)
+        assert result.returncode == 0, result.stderr
+        return result.returncode
+
+    monkeypatch.setattr(sori, "_run", local_dry_run)
+    assert sori.install_requirements(tmp_path, ["requirements-empty.txt"]) is None

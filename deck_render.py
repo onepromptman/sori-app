@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-deck_render.py — training.py's structured outline -> a rendered .pptx.
+deck_render.py \u2014 training.py's structured outline -> a rendered .pptx.
 
 Bridges the LLM-produced outline (a curated, vocabulary-limited slide schema
-— see training.SLIDE_KINDS) onto a theme backend: a module exporting a
+\u2014 see training.SLIDE_KINDS) onto a theme backend: a module exporting a
 `THEMES` tuple and `render(slides, pptx_path)`. `themes/studio.py` is the
 default and ships everywhere; a private vendored engine can supply extra
 themes when present, and is imported softly so its absence changes nothing
@@ -76,7 +76,7 @@ _BODY_KINDS = {
 
 
 class DeckRenderError(Exception):
-    """A structurally invalid outline — caught by app.py as a TrainingError."""
+    """A structurally invalid outline \u2014 caught by app.py as a TrainingError."""
 
 
 def _pts(items) -> list[dict]:
@@ -228,6 +228,7 @@ def _slide_spec(raw: dict, mode: str) -> dict:
         )
     elif kind == "data":
         base.update(
+            heading=raw.get("heading", ""),
             eyebrow=raw.get("eyebrow", ""),
             rail_label=raw.get("rail_label", "") or "METRICS",
             hero_stat=raw.get("hero_stat") or {},

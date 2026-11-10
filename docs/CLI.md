@@ -7,6 +7,7 @@ want to script Sori, or aren't on Windows.
 ```bash
 pip install -r requirements.txt        # transcription only (Python 3.11+)
 pip install -r requirements-app.txt    # + training decks and the app
+python preflight.py transcribe         # or let Sori do it: its own environment, exact pins
 ```
 
 ## transcribe.py
@@ -45,8 +46,8 @@ Two routes into one renderer.
 
 Both write a `.pptx` deck and a `.md` study guide next to the transcript,
 or in `--out`. The outline route validates the JSON the same way the API
-response is validated (6 to 20 slides, known slide kinds, verbatim quotes,
-a study guide) and exits 1 with `!! ...` when it does not fit.
+response is validated (6 to 20 slides, known slide kinds, quotes and
+figures checked against the transcript, a study guide) and exits 1 with `!! ...` when it does not fit.
 
 API route key lookup: `ANTHROPIC_API_KEY`, then the key saved by the app or
 `settings.py api-key set`. There is no `--api-key` flag (a key on the
@@ -56,15 +57,17 @@ install). A checkout that also has the private `engine/` offers `baek`
 (light), `dark` and `dancheong` on top.
 
 Transcripts saved by `transcribe.py` or the sweep begin with a three-line
-header (title, `show — date`, source URL) that `train.py` reads; pass
+header (title, `show - date`, source URL) that `train.py` reads; pass
 `--title/--show/--date` for any other `.txt`.
 
 ## app.py
 
 ```bash
-python app.py             # open the window
-python app.py --sweep     # headless: check feeds, transcribe Auto shows, exit
-python app.py --selftest  # confirm every backend is installed
+python app.py               # start the local server and open Sori in the browser
+python app.py --no-browser  # start the local server without opening a browser tab
+python app.py --window      # open the older desktop window instead of the browser
+python app.py --sweep       # headless: check feeds, transcribe Auto shows, exit
+python app.py --selftest    # confirm every backend is installed
 ```
 
 `--sweep` is what the daily scheduled task runs. Subscriptions come from

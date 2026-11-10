@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-podcast-transcriber — free, local, no-API-key podcast transcription.
+podcast-transcriber \u2014 free, local, no-API-key podcast transcription.
 
 Two paths to a transcript:
-  1. YouTube captions — instant, if the episode is also posted on YouTube.
-  2. Local Whisper    — works for any MP3, runs entirely on your machine.
+  1. YouTube captions \u2014 instant, if the episode is also posted on YouTube.
+  2. Local Whisper    \u2014 works for any MP3, runs entirely on your machine.
 
 No OpenAI/AssemblyAI key required. See README.md for setup and examples.
 """
@@ -18,6 +18,8 @@ import re
 import sys
 import tempfile
 import threading
+import urllib.error
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from email.utils import parsedate_to_datetime
@@ -134,7 +136,9 @@ def _clean_vtt(vtt_text: str) -> str:
         if not text or text == prev:
             continue
         if prev and (text in prev or prev in text):
-            prev = text if len(text) > len(prev) else prev
+            if len(text) > len(prev):
+                out[-1] = text
+                prev = text
             continue
         out.append(text)
         prev = text
@@ -159,8 +163,8 @@ def _vtt_timestamp_to_seconds(ts: str) -> float:
 def _vtt_segments(vtt_text: str) -> list[dict]:
     """Parse VTT cues into [{"start", "end", "text"}] (seconds, stripped text).
 
-    Same rolling-caption dedupe as `_clean_vtt` — line by line, skip an exact
-    repeat or a containment either way (keeping the longer variant) — but
+    Same rolling-caption dedupe as `_clean_vtt` \u2014 line by line, skip an exact
+    repeat or a containment either way (keeping the longer variant) \u2014 but
     timestamped instead of flattened into one string. A survivor gets a new
     segment; a "kept the longer one" match widens the previous segment's text
     and end time instead of adding a near-duplicate.
@@ -176,7 +180,7 @@ def _vtt_segments(vtt_text: str) -> list[dict]:
                 cue_end = _vtt_timestamp_to_seconds(m.group("end"))
             except ValueError:
                 # A malformed cue isn't worth failing the whole transcript over
-                # (and isn't a network error) — treat it as no current cue and
+                # (and isn't a network error) - treat it as no current cue and
                 # keep going; text under it gets skipped below like a preamble.
                 cue_start = cue_end = None
             continue
@@ -194,7 +198,7 @@ def _vtt_segments(vtt_text: str) -> list[dict]:
             continue
         if cue_start is None:
             # Text before the first cue (or after a malformed one) has no
-            # timestamp home — drop it rather than emit start=None.
+            # timestamp home - drop it rather than emit start=None.
             continue
         segments.append({"start": cue_start, "end": cue_end, "text": text})
         prev = text
@@ -292,7 +296,7 @@ def cmd_youtube(args: argparse.Namespace) -> None:
     try:
         transcript = fetch_youtube_captions(args.url, args.lang, meta)
     except ImportError:
-        sys.exit("yt-dlp is required for this command: pip install yt-dlp")
+        sys.exit("!! yt-dlp is not installed. Run `python preflight.py transcribe` first.")
 
     if transcript is None:
         sys.exit(
@@ -452,14 +456,20 @@ def _whisper_or_exit(audio_path: Path, model_name: str, device: str) -> tuple[st
     try:
         return _transcribe_whisper(audio_path, model_name, device)
     except ImportError:
-        sys.exit("faster-whisper is required for this command: pip install faster-whisper")
+        sys.exit("!! faster-whisper is not installed. Run `python preflight.py transcribe` first.")
 
 
 def cmd_audio(args: argparse.Namespace) -> None:
     with tempfile.TemporaryDirectory() as tmp:
         audio_path = _download_audio(args.url_or_path, Path(tmp))
+        if not audio_path.is_file():
+            sys.exit(f"!! file not found: {audio_path}")
         transcript, duration = _whisper_or_exit(audio_path, args.model, args.device)
-    _write_output(transcript, args.out, _meta_from_args(args, {"url": args.url_or_path}))
+    # A local file is named, not located: the folder path stays off the page.
+    is_url = bool(re.match(r"^https?://", args.url_or_path))
+    source = args.url_or_path if is_url else Path(args.url_or_path).name
+    meta = {"title": _source_title(args.url_or_path), "url": source}
+    _write_output(transcript, args.out, _meta_from_args(args, meta))
     _report_completeness(transcript, expected_seconds=duration)
 
 
@@ -493,20 +503,27 @@ def cmd_episode(args: argparse.Namespace) -> None:
 # ---------------------------------------------------------------------------
 
 
+def _source_title(url_or_path: str) -> str:
+    """A header title for bare audio: the file name without its extension."""
+    if re.match(r"^https?://", url_or_path):
+        url_or_path = urllib.parse.unquote(urllib.parse.urlsplit(url_or_path).path)
+    return Path(url_or_path).stem
+
+
 def _slugify(text: str) -> str:
     text = re.sub(r"[^\w\s-]", "", text).strip().lower()
     return re.sub(r"[\s_-]+", "-", text)[:80]
 
 
 def header_block(meta: dict | None) -> str:
-    """The three-line header Sori's sweep writes (title / "show — date" / url),
+    """The three-line header Sori's sweep writes (title / "show \u2014 date" / url),
     so a CLI transcript carries its own metadata and train.py reads it back
     without --title/--show/--date. Empty when there is no title to lead with."""
     if not meta or not (meta.get("title") or "").strip():
         return ""
     return (
         f"{meta.get('title', '').strip()}\n"
-        f"{(meta.get('show') or '').strip()} — {(meta.get('date') or '').strip()}\n"
+        f"{(meta.get('show') or '').strip()} \u2014 {(meta.get('date') or '').strip()}\n"
         f"{(meta.get('url') or '').strip()}\n\n"
     )
 
@@ -535,7 +552,7 @@ def _report_completeness(transcript: str, expected_seconds: float | None) -> Non
         minutes = expected_seconds / 60
         wpm = words / minutes if minutes else 0
         print(
-            f"\n[{words} words over {minutes:.1f} min of audio — {wpm:.0f} wpm. "
+            f"\n[{words} words over {minutes:.1f} min of audio \u2014 {wpm:.0f} wpm. "
             f"Spoken English typically runs ~150-220 wpm; a much lower number "
             f"usually means part of the transcript is missing.]",
             file=sys.stderr,
@@ -560,7 +577,7 @@ def _add_header_flags(p: argparse.ArgumentParser) -> None:
 def build_parser() -> argparse.ArgumentParser:
     p = argparse.ArgumentParser(
         prog="transcribe.py",
-        description="Get a transcript from a podcast episode — free, local, no API key.",
+        description="Get a transcript from a podcast episode \u2014 free, local, no API key.",
     )
     sub = p.add_subparsers(dest="command", required=True)
 
@@ -605,7 +622,28 @@ def main() -> None:
     sori_log.setup()
     parser = build_parser()
     args = parser.parse_args()
-    args.func(args)
+    try:
+        args.func(args)
+    except KeyboardInterrupt:
+        sys.exit("!! stopped")
+    except Exception as exc:  # noqa: BLE001 - the last stop before a traceback
+        # A person reads this, so it is one line. The traceback goes to the log.
+        log.debug("command failed", exc_info=True)
+        sys.exit(f"!! {_plain_reason(exc)}")
+
+
+def _plain_reason(exc: Exception) -> str:
+    """One line for a failed command, without the URL (it can carry a token)."""
+    if isinstance(exc, ET.ParseError):
+        return f"that address did not return a podcast feed ({exc})"
+    if isinstance(exc, urllib.error.HTTPError):
+        return f"the server answered {exc.code} {exc.reason}"
+    if isinstance(exc, urllib.error.URLError):
+        return f"couldn't reach the server ({exc.reason}). Check the address and your connection."
+    if isinstance(exc, FileNotFoundError):
+        return f"file not found: {exc.filename or exc}"
+    text = " ".join(str(exc).split())
+    return sori_log.redact(text) or type(exc).__name__
 
 
 if __name__ == "__main__":

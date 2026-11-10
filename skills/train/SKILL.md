@@ -16,9 +16,19 @@ description: >
 `SORI` below is the folder that holds `train.py`: `${CLAUDE_PLUGIN_ROOT}`
 when installed as a plugin, otherwise the current checkout of
 https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
-Setup, once: `cd "$SORI" && python -m pip install -r requirements-app.txt`
-(adds `python-pptx`, `numpy`, `matplotlib`; `anthropic` is only used by the
-paid route).
+
+## Get ready (every time, before the first command)
+
+```bash
+python "$SORI/preflight.py" train
+```
+
+This checks Python (3.11 or newer), sets up Sori's own environment the first
+time, and prints `SORI_PY=<path>` on its last line. `PY` below is that path:
+run every Sori script with it. Tell the user anything it prints after `note:`
+before you go on. If it ends with a line starting `!!`, repeat that line to
+the user and stop. Never install packages by hand. For the paid route
+only, add `--api` to the preflight command.
 
 Two routes, one engine. Both end in the same validator and renderer, so the
 deck is the same deck whoever authored the outline. The exe uses the API
@@ -30,7 +40,7 @@ are already the model.
 1. Read the rules and the exact JSON shape:
 
    ```bash
-   python "$SORI/train.py" --brief
+   "$PY" "$SORI/train.py" --brief
    ```
 
    The brief is Sori's system prompt (five house rules: every claim, quote
@@ -39,7 +49,7 @@ are already the model.
    `submit_training` schema: `deck_title`, optional `deck_subtitle`,
    `closing_heading`, `cta`, 6 to 20 `slides` of kinds `divider`, `content`,
    `content_stat`, `two_column`, `process`, `agenda`, `quote`, `callout`,
-   and `study_guide_markdown`.
+   `full_bleed`, `data`, `scorecard`, `chart`, and `study_guide_markdown`.
 
 2. Read the whole transcript file. Do not write from memory of the show.
    Skip ad reads. If the transcript is thin (see the wpm check in
@@ -52,12 +62,12 @@ are already the model.
 4. Render:
 
    ```bash
-   python "$SORI/train.py" "<transcript.txt>" --outline outline.json [--out <folder>] [--theme baek|dark|dancheong]
+   "$PY" "$SORI/train.py" "<transcript.txt>" --outline outline.json [--out <folder>] [--theme <theme>]
    ```
 
    Exit 1 with `!! ...` on stderr means the outline failed validation (slide
-   count, unknown kind, empty quote, missing study guide); fix the JSON and
-   rerun. Nothing is spent on this route, ever.
+   count, unknown kind, a quote or figure that is not in the transcript,
+   missing study guide); fix the JSON and rerun. Nothing is spent on this route, ever.
 
 ## Route 2 (paid): one Claude API call on the user's key
 
@@ -74,7 +84,7 @@ transcript's size in input tokens (capped by `MAX_TRANSCRIPT_CHARS` in
 3. Name the transcript you will send, so the wrong file never gets billed.
 
 ```bash
-python "$SORI/train.py" "<transcript.txt>" [--out <folder>] [--theme baek|dark|dancheong] [--model <claude model>]
+"$PY" "$SORI/train.py" "<transcript.txt>" [--out <folder>] [--theme <theme>] [--model <claude model>]
 ```
 
 There is no `--api-key` flag: a key on the command line would land in shell
@@ -84,16 +94,15 @@ found it exits 2 with `!! no Claude API key: ...` and nothing is spent.
 ## Metadata and output
 
 Transcripts written by `/sori:transcribe` or the sweep start with a
-three-line header (title, `show — date`, source); `train.py` reads it. For
-any other .txt pass `--title/--show/--date`. Themes: `baek` (light, the CLI
-default), `dark`, `dancheong`; `train.py` does not read the app's deck-theme
-setting, pass `--theme`.
+three-line header (title, `show - date`, source); `train.py` reads it. For
+any other .txt pass `--title/--show/--date`. The public checkout defaults to
+`studio`; optional installed backends may add themes. Run `train.py --help`
+to see available choices. The CLI does not read the app's deck-theme setting.
 
 Output: `<date> - <title>.pptx` and `<date> - <title>.md` next to the
 transcript, or in `--out`. Report both paths; if the user wants the
-takeaways, read the `.md` rather than summarizing from memory. On first
-render Sori installs the deck fonts (Gowun Batang, IBM Plex, SIL OFL) into
-the Windows user font folder so PowerPoint does not substitute.
+takeaways, read the `.md` rather than summarizing from memory. The public
+`studio` theme does not install fonts; an optional private backend may do so.
 
 ## Never
 

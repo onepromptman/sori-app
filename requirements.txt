@@ -1,3 +1,6 @@
 # exact pins, copied from pyproject.toml (the one place pins live)
+# The lock holds what these pull in to tested versions. Left to float, a newer
+# av breaks faster-whisper. requirements-app.txt inherits this line.
+-c requirements.lock
 yt-dlp==2026.7.4
 faster-whisper==1.2.1

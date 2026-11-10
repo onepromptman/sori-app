@@ -30,7 +30,7 @@ def test_every_requirements_line_matches_a_pyproject_pin():
     for fname in REQ_FILES:
         for raw in (ROOT / fname).read_text(encoding="utf-8").splitlines():
             line = raw.split("#", 1)[0].strip()
-            if not line or line.startswith("-r "):
+            if not line or line.startswith(("-r ", "-c ")):
                 continue
             m = re.fullmatch(r"([A-Za-z0-9._-]+)==([^\s;]+)", line)
             assert m, f"{fname}: {line!r} is not an exact pin"
@@ -38,3 +38,13 @@ def test_every_requirements_line_matches_a_pyproject_pin():
             assert pins.get(name) == version, (
                 f"{fname} pins {name}=={version}, pyproject says {pins.get(name)}"
             )
+
+
+def test_source_installs_are_held_to_the_lock():
+    """Regression: `pip install -r requirements.txt` took the newest av, which the
+    pinned faster-whisper cannot call, so a fresh source install could not transcribe."""
+    lines = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
+    assert "-c requirements.lock" in lines
+    assert "-r requirements.txt" in (ROOT / "requirements-app.txt").read_text(encoding="utf-8").splitlines()
+    lock = (ROOT / "requirements.lock").read_text(encoding="utf-8")
+    assert re.search(r"^av==", lock, re.M)

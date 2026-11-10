@@ -9,13 +9,17 @@ are in [CLI.md](CLI.md).
 
 - **Build with `package.py`, never raw PyInstaller.** PyInstaller emits only
   `Sori.exe` + `_internal/`; the sidecars beside the exe come from
-  `package.py`, which fails loudly if one is missing.
-- **Close every Sori window before building.** An exe running from
-  `dist/Sori/` locks the folder; PyInstaller then fails (exit 1) or the
-  background build stalls silently.
+  `public_release.py`, which builds a fresh tracked-source snapshot and fails if a sidecar is missing.
+- **Never re-zip an installed copy.** Public builds exclude untracked files and
+  the private renderer. Outputs and checksums are under `build/public-*/release/`.
 - **`SORI_HOME=<dir>` isolates state** (subscriptions, transcripts, key).
-  Two app instances on one state dir both auto-queue and reproduce the
-  "endless queue".
+  One engine runs per state dir: the browser app, `--window` and `--sweep`
+  each take `engine.lock` there (`engine_lock.py`) and stand down when it is
+  held. It is an operating-system lock, so a crash never leaves it stuck.
+- **The exe is a local web server by default** (`webserver.py`). Test a build
+  with `SORI_HOME` and `SORI_PORT` set and `--no-browser`: a launch on the real
+  home starts the poller, which queues every new episode. The port bind is how a
+  second launch finds the running copy, so keep `allow_reuse_address` off.
 - **`add_show` seeds `seen` with all but the newest episode**, so a fresh
   subscription offers exactly one episode. Trim `seen` in `shows.json` to
   stage more.
@@ -26,7 +30,7 @@ are in [CLI.md](CLI.md).
   crisp PNG through headless Edge. PrintWindow on the real app returns
   stale paint; a background process cannot foreground it.
 - **Check layouts at 1024 wide.** The page's minimum width is 1024 logical
-  px; the window opens at 1360x820 so that a 125% or 150% display still
+  px; the `--window` desktop window opens at 1360x820 so that a 125% or 150% display still
   shows the right-hand buttons.
 - **Row grid:** `.ep` is `24px minmax(0,1fr) 156px 138px`; the last column
   must hold a 100 px action button plus the 26 px Dismiss control.
@@ -39,7 +43,3 @@ are in [CLI.md](CLI.md).
   api-key set` reads the env var). Never print a key; last 4 chars at most.
 - Fonts in `ui/fonts/` are SIL OFL 1.1; `THIRD-PARTY-NOTICES.md` must
   ship in every zip (it is a `package.py` sidecar).
-
-## Provenance
-
-The optional deck engine (`engine/deckgen.py`, not part of this repository) was copied from a private design repository.

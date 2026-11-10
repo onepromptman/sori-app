@@ -1,11 +1,11 @@
-# cloud/ — the captions-only cloud sweep
+# cloud/ - the captions-only cloud sweep
 
 Everything Sori needs to run as a scheduled cloud routine (a Claude Code
 `/schedule` routine, see `ROUTINE.md`) instead of on your own PC. The cloud
 runner has no GPU and no Whisper: it installs `requirements-captions.txt`,
-so only **YouTube shows** (captions via yt-dlp) can be swept there. With an
-`ANTHROPIC_API_KEY` it can also generate training decks for shows marked
-auto-train (paid; see the spend gate in `ROUTINE.md`).
+so only **YouTube shows** (captions via yt-dlp) can be swept there. Cloud
+auto-training is blocked because the sweep does not read `ANTHROPIC_API_KEY`;
+see the open item and spend gate in `ROUTINE.md`.
 
 | File | Role |
 |---|---|
@@ -18,7 +18,7 @@ ask-first.
 
 ## The output repo: `<owner>/sori-output` (private)
 
-**Decision 2 of the v3.2 handoff, recommended and not yet confirmed by
+**Design note: this destination is recommended and not yet confirmed by
 the owner.** The alternative was Google Drive via connector. Until it is confirmed,
 this layout is a proposal; the script works against any checkout path.
 
@@ -27,7 +27,7 @@ of its state under `SORI_HOME`, so everything lands under `state/`:
 
 ```
 sori-output/
-  .gitignore              state/credentials.json, state/*.json.tmp, state/*.json.bad
+  .gitignore              state/credentials.json, state/*.json.tmp, state/*.json.bad*
   README.md               one paragraph: "written by the Sori cloud routine, do not edit by hand"
   state/
     shows.json            the CLOUD subscription list + per-show `seen` markers
@@ -52,9 +52,10 @@ Notes on that layout:
   new was transcribed. The commit message carries the counts:
   `sweep 2026-09-05T16:03:00Z: 1 transcribed, 0 trained`.
 - `state/credentials.json` must never exist in this repo. The script refuses
-  to commit if the file exists and is not gitignored (exit 4). The API key
-  reaches the engine only through the `ANTHROPIC_API_KEY` environment
-  variable (see the open item below).
+  to commit if the file exists and is not gitignored (exit 4). It also refuses
+  unignored corrupt-store backups, including numbered backups. The API key
+  would need to reach the engine through the `ANTHROPIC_API_KEY` environment
+  variable after the open item below is resolved.
 
 ## Running it by hand (from a Sori checkout)
 

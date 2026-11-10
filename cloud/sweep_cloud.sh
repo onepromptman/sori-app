@@ -85,6 +85,15 @@ if [ -e "$SORI_HOME/credentials.json" ] && \
   echo "!! state/credentials.json exists and is not gitignored; refusing to commit" >&2
   exit 4
 fi
+# Corrupt-store backups can contain subscription data or credentials and may
+# have a numeric suffix. Refuse to stage them unless every backup is ignored.
+for backup in "$SORI_HOME"/*.json.bad*; do
+  [ -e "$backup" ] || continue
+  if ! git -C "$SORI_OUTPUT_DIR" check-ignore -q "state/${backup##*/}"; then
+    echo "!! state/${backup##*/} is not gitignored; refusing to commit" >&2
+    exit 4
+  fi
+done
 if [ -z "$(git -C "$SORI_OUTPUT_DIR" status --porcelain)" ]; then
   echo "no changes: nothing committed, nothing pushed"
   exit 0

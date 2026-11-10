@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Sori — a small desktop app around podcast-transcriber.
+Sori \u2014 a small desktop app around podcast-transcriber.
 
 Subscribe to podcast RSS feeds and YouTube channels, see what's new, and turn
 episodes into text files. Same two free paths as the CLI: YouTube captions for
@@ -8,14 +8,16 @@ video shows, local Whisper for audio. No API key, nothing leaves the machine
 except the feed/audio fetches themselves.
 
 One more step is optional, and it is NOT free: turning a transcript into a
-training deck + study guide. Whisper only converts speech to text — writing
+training deck + study guide. Whisper only converts speech to text \u2014 writing
 a training needs a language model, so that one step calls the Claude API
 (a key entered in Settings) and costs money per run. Everything else in the
 app stays exactly as free/local as it always was; see training.py and
 deck_render.py for that boundary.
 
-Two ways to run, plus two CLIs over the same store:
-    py app.py            open the window (ui/index.html, pywebview)
+Three ways to run, plus two CLIs over the same store:
+    py app.py            start Sori on this PC and open it in the browser
+                         (webserver.py; --no-browser starts it without a tab)
+    py app.py --window   the older desktop window (ui/index.html, pywebview)
     py app.py --sweep    headless: check every show, transcribe new episodes
                          for shows marked auto (and generate trainings for
                          shows marked Auto-train), print a summary, exit
@@ -34,13 +36,14 @@ PodcastStudio before the rename; state_dir() migrates it automatically:
     sweep.log                      append-only log of headless runs
 
 The JS bridge (class Api) is the only surface the UI touches. Every method
-returns {"ok": True, "data": ...} or {"ok": False, "error": "..."} — the UI
+returns {"ok": True, "data": ...} or {"ok": False, "error": "..."} \u2014 the UI
 never sees an exception, and a dead network degrades to an error string.
 """
 
 from __future__ import annotations
 
 import argparse
+import hashlib
 import itertools
 import json
 import logging
@@ -60,6 +63,8 @@ from pathlib import Path
 import sori_log
 import transcribe as tx
 import training as tr
+import webserver
+from engine_lock import EngineLock
 
 log = logging.getLogger(__name__)
 
@@ -73,7 +78,7 @@ YT_NS = {
 # thousands of items long; nobody is catching up on 1,000 episodes.
 FEED_WINDOW = 25
 # Total tries an episode gets on its own: the first attempt plus two automatic
-# retries on later polls. After that it is parked until someone hits Retry —
+# retries on later polls. After that it is parked until someone hits Retry -
 # a feed that 404s forever must not burn the queue every hour.
 MAX_ATTEMPTS = 3
 # Feeds are network-bound, so check them concurrently; a small pool keeps a
@@ -89,7 +94,7 @@ FEED_WORKERS = 4
 def state_dir() -> Path:
     """Root of all app state. SORI_HOME overrides (used by tests).
 
-    This folder was called PodcastStudio through the Earshot rebrand — the
+    This folder was called PodcastStudio through the Earshot rebrand \u2014 the
     name survived both renames because it holds live user data. If the old
     folder exists and the new one doesn't, it is renamed in place so a
     returning user keeps every show, transcript, and training. A migration
@@ -151,7 +156,7 @@ def anthropic_api_key() -> str | None:
 
 
 def transcripts_dir() -> Path:
-    """Where transcripts land — the settings override if one is set, else the default."""
+    """Where transcripts land \u2014 the settings override if one is set, else the default."""
     override = None
     try:
         override = load_store()["settings"].get("transcripts_dir")
@@ -163,7 +168,7 @@ def transcripts_dir() -> Path:
 
 
 def app_dir() -> Path:
-    """Folder holding ui/ — differs between source runs and the frozen EXE."""
+    """Folder holding ui/ \u2014 differs between source runs and the frozen EXE."""
     if getattr(sys, "frozen", False):
         return Path(getattr(sys, "_MEIPASS", Path(sys.executable).parent))
     return Path(__file__).resolve().parent
@@ -176,8 +181,13 @@ def _safe_name(text: str, limit: int = 90) -> str:
     return cleaned[:limit].rstrip(". ") or "untitled"
 
 
+def _episode_stem(episode: dict) -> str:
+    """File name stem shared by an episode's transcript and its training files."""
+    return f"{_safe_name(episode.get('date', 'undated'))} - {_safe_name(episode.get('title', ''))}"
+
+
 # ---------------------------------------------------------------------------
-# Store — shows.json read/write
+# Store - shows.json read/write
 # ---------------------------------------------------------------------------
 
 _store_lock = threading.RLock()
@@ -217,10 +227,41 @@ def load_store() -> dict:
             return _fresh_store()
         try:
             data = json.loads(path.read_text(encoding="utf-8"))
+            if not isinstance(data, dict):
+                raise ValueError("store must be an object")
+            if not isinstance(data.get("shows", []), list) or not all(
+                isinstance(show, dict)
+                and isinstance(show.get("id"), str)
+                and isinstance(show.get("folder", "unsorted"), str)
+                and (
+                    show.get("seen") is None
+                    or (
+                        isinstance(show["seen"], list)
+                        and all(isinstance(episode_id, str) for episode_id in show["seen"])
+                    )
+                )
+                for show in data.get("shows", [])
+            ):
+                raise ValueError("shows must be a list of objects")
+            if data.get("settings") is not None and not isinstance(data["settings"], dict):
+                raise ValueError("settings must be an object")
+            if data.get("folders") is not None and (
+                not isinstance(data["folders"], list)
+                or not all(
+                    isinstance(folder, dict) and isinstance(folder.get("id"), str)
+                    for folder in data["folders"]
+                )
+            ):
+                raise ValueError("folders must be a list of objects with ids")
         except (OSError, ValueError):
             # A corrupt file must not brick the app; move it aside and restart clean.
             try:
-                path.replace(path.with_suffix(".json.bad"))
+                backup = path.with_suffix(".json.bad")
+                n = 1
+                while backup.exists():
+                    backup = path.with_suffix(f".json.bad.{n}")
+                    n += 1
+                path.rename(backup)
             except OSError:
                 pass
             return _fresh_store()
@@ -274,7 +315,7 @@ def _same_show_name(a: str, b: str) -> bool:
     """
 
     def core(s: str) -> str:
-        head = re.split(r"\s*[:|—–]\s*|\s+-\s+", s or "", maxsplit=1)[0]
+        head = re.split(r"\s*[:|\u2014\u2013]\s*|\s+-\s+", s or "", maxsplit=1)[0]
         return re.sub(r"[^a-z0-9]+", " ", head.lower()).strip()
 
     x, y = core(a), core(b)
@@ -289,7 +330,7 @@ def _push_seen(show: dict, episode_id: str) -> None:
     seen = show.setdefault("seen", [])
     if episode_id not in seen:
         seen.append(episode_id)
-    # Keep the marker list bounded — it only needs to cover the feed window.
+    # Keep the marker list bounded - it only needs to cover the feed window.
     del seen[:-400]
 
 
@@ -310,7 +351,7 @@ def _record_failure(show_id: str, episode_id: str, error: str) -> int:
     """Count one failed attempt; returns the running total.
 
     Below MAX_ATTEMPTS the episode stays unseen, so the next poll picks it up
-    again — transient things (a flaky CDN, a caption track that lands an hour
+    again \u2014 transient things (a flaky CDN, a caption track that lands an hour
     after the video) heal themselves. At MAX_ATTEMPTS it is marked seen and
     only a manual Retry brings it back.
     """
@@ -383,7 +424,7 @@ def _resolve_youtube(url: str) -> str:
     if m:
         return _yt_channel_feed(m.group(1))
 
-    # @handle, /c/name, /user/name, or a plain video URL — ask yt_dlp once.
+    # @handle, /c/name, /user/name, or a plain video URL - ask yt_dlp once.
     try:
         import yt_dlp
     except ImportError as exc:  # pragma: no cover - packaging guarantees this
@@ -505,7 +546,28 @@ class TranscriptionError(Exception):
 def transcript_path_for(show_name: str, episode: dict) -> Path:
     folder = transcripts_dir() / _safe_name(show_name, 60)
     folder.mkdir(parents=True, exist_ok=True)
-    return folder / f"{episode.get('date', 'undated')} - {_safe_name(episode.get('title', ''))}.txt"
+    base = folder / f"{_episode_stem(episode)}.txt"
+    if not base.exists():
+        return base
+
+    # Reuse an existing transcript only when its sidecar identifies this episode.
+    def matches(path: Path) -> bool:
+        try:
+            meta = json.loads(path.with_suffix(".json").read_text(encoding="utf-8"))["meta"]
+            return bool(episode.get("url")) and meta.get("url") == episode["url"]
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            return False
+
+    if matches(base):
+        return base
+    identity = str(episode.get("id") or episode.get("url") or "")
+    suffix = hashlib.sha256(identity.encode("utf-8")).hexdigest()[:12]
+    candidate = base.with_name(f"{base.stem} - {suffix}{base.suffix}")
+    n = 2
+    while candidate.exists() and not matches(candidate):
+        candidate = base.with_name(f"{base.stem} - {suffix}-{n}{base.suffix}")
+        n += 1
+    return candidate
 
 
 def run_transcription(show: dict, episode: dict, settings: dict, on_progress=None, cancel=None) -> Path:
@@ -554,7 +616,7 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
         device = settings.get("device", "cpu")
         raw_lang = settings.get("lang")
         # English stays auto/forced-by-model; "ko" (etc.) only reaches
-        # multilingual models like large-v3 — a .en model can't take it.
+        # multilingual models like large-v3 - a .en model can't take it.
         language = None if (raw_lang in (None, "auto", "en") or model_name.endswith(".en")) else raw_lang
         with tempfile.TemporaryDirectory() as tmp:
             report("downloading", 0.0)
@@ -604,7 +666,7 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
         if not text.strip():
             raise TranscriptionError("Whisper returned an empty transcript.")
 
-    header = f"{episode.get('title', '')}\n{show['name']} — {episode.get('date', '')}\n{episode.get('url', '')}\n\n"
+    header = f"{episode.get('title', '')}\n{show['name']} \u2014 {episode.get('date', '')}\n{episode.get('url', '')}\n\n"
     out.write_text(header + text, encoding="utf-8")
 
     sidecar = {
@@ -629,7 +691,7 @@ def run_transcription(show: dict, episode: dict, settings: dict, on_progress=Non
 
 
 # ---------------------------------------------------------------------------
-# Training generation — transcript -> Claude -> deck + study guide
+# Training generation - transcript -> Claude -> deck + study guide
 # ---------------------------------------------------------------------------
 #
 # Unlike transcription, this step is NOT free/local: it calls the Claude API,
@@ -646,7 +708,7 @@ class TrainingError(Exception):
 def training_paths_for(show_name: str, episode: dict) -> tuple[Path, Path]:
     folder = trainings_dir() / _safe_name(show_name, 60)
     folder.mkdir(parents=True, exist_ok=True)
-    base = folder / f"{episode.get('date', 'undated')} - {_safe_name(episode.get('title', ''))}"
+    base = folder / _episode_stem(episode)
     # Not with_suffix(): a title like "Ep. 12" would be cut at its last dot,
     # and two such episodes would share one deck.
     return base.with_name(base.name + ".pptx"), base.with_name(base.name + ".md")
@@ -658,7 +720,7 @@ def run_training(
     """Produce one `.pptx` deck + one `.md` study guide from an existing transcript.
 
     Raises TrainingError on a clean failure, tx.TranscriptionCancelled if
-    `cancel` is set mid-run (same cancel primitive as transcription — one
+    `cancel` is set mid-run (same cancel primitive as transcription \u2014 one
     cooperative-cancel contract across both job types).
     """
 
@@ -677,7 +739,7 @@ def run_training(
 
     api_key = anthropic_api_key()
     if not api_key:
-        raise TrainingError("No Claude API key set — add one in Settings first.")
+        raise TrainingError("No Claude API key set \u2014 add one in Settings first.")
     if not transcript_path.exists():
         raise TrainingError("The transcript for this episode is missing.")
 
@@ -722,7 +784,7 @@ def run_training(
 
 
 class TrainWorker:
-    """Serial training-generation queue — mirrors Worker's shape exactly.
+    """Serial training-generation queue \u2014 mirrors Worker's shape exactly.
 
     A separate queue/thread from transcription on purpose: training is a
     paid API call and a CPU-heavy pptx render, and must never block (or be
@@ -853,7 +915,7 @@ class TrainWorker:
 
 
 # ---------------------------------------------------------------------------
-# Worker — one episode at a time, in the background
+# Worker - one episode at a time, in the background
 # ---------------------------------------------------------------------------
 
 
@@ -905,11 +967,14 @@ class Worker:
         Whisper emits a segment every second or two and the downloader fires
         per 256KB chunk; pushing every one of those across evaluate_js makes
         the window stutter for no visible gain. Stage changes and the final
-        frame always go through — only mid-stage ticks are rate-limited.
+        frame always go through \u2014 only mid-stage ticks are rate-limited.
         """
         last = {"t": 0.0, "frac": -1.0, "stage": None}
 
         def report(stage: str, frac=None) -> None:
+            # The worker's own _set is the one "done": it carries the saved path.
+            if stage == "done":
+                return
             now = time.monotonic()
             moved = frac is not None and (frac - last["frac"]) >= 0.01
             if stage != last["stage"] or frac is None or frac >= 1.0 or (moved and now - last["t"] >= 0.25):
@@ -925,7 +990,7 @@ class Worker:
         eid = episode["id"]
         with self._lock:
             # Re-arm the cancel event FIRST: if a prior cancel is still
-            # pending on this id, a fresh submit must not inherit it — the
+            # pending on this id, a fresh submit must not inherit it - the
             # "already queued" short-circuit below would otherwise drop this
             # request and it'd surface as cancelled without ever running.
             event = self._cancels.get(eid)
@@ -942,7 +1007,7 @@ class Worker:
             # previous run's error text or path.
             self._states[eid] = {"id": eid}
         # Carry enough of the episode in the snapshot that the UI can render
-        # (and re-queue) a row for a job whose episode left the feed window —
+        # (and re-queue) a row for a job whose episode left the feed window -
         # local file imports have no feed row at all.
         self._set(
             eid,
@@ -981,7 +1046,7 @@ class Worker:
 
         Returns 'dismissed' (gone now) or 'stopping' (mid-run; the loop drops
         it the moment Whisper notices the cancel). Marking the episode seen in
-        the store is the caller's job — that is what keeps the next feed check
+        the store is the caller's job \u2014 that is what keeps the next feed check
         from offering it again.
         """
         with self._lock:
@@ -1028,7 +1093,7 @@ class Worker:
             eid = episode["id"]
             event = self._cancels.get(eid)
             if event is not None and event.is_set():
-                # Cancelled before it ever started — never call run_transcription.
+                # Cancelled before it ever started - never call run_transcription.
                 with self._lock:
                     self._queued.discard(eid)
                 if not self._drop_if_dismissed(eid):
@@ -1078,10 +1143,10 @@ class Worker:
                 with self._lock:
                     self._queued.discard(eid)
                     self._running = None
-                    # Bound the in-memory job tables — a long-lived session
+                    # Bound the in-memory job tables - a long-lived session
                     # must not grow these forever. Same trim shape as the
                     # `failures` dict in _record_failure, but a job still in
-                    # self._queued must never be evicted here — its cancel
+                    # self._queued must never be evicted here - its cancel
                     # Event is load-bearing for that pending submit.
                     if len(self._states) > 200:
                         for key in list(self._states)[:-200]:
@@ -1094,7 +1159,7 @@ class Worker:
 
 
 # ---------------------------------------------------------------------------
-# Bridge API — everything the UI can call
+# Bridge API - everything the UI can call
 # ---------------------------------------------------------------------------
 
 
@@ -1110,11 +1175,12 @@ def bridge(func):
 
     wrapper.__name__ = func.__name__
     wrapper.__doc__ = func.__doc__
+    wrapper.is_bridge_method = True  # webserver.py exposes only these
     return wrapper
 
 
 # ---------------------------------------------------------------------------
-# Transcript reading + export — shared by the read_transcript/export_transcript
+# Transcript reading + export - shared by the read_transcript/export_transcript
 # bridge methods below.
 # ---------------------------------------------------------------------------
 
@@ -1125,7 +1191,7 @@ VALID_LANGS = {"auto", "en", "ko"}
 def _confine_to_transcripts(path: str) -> Path:
     """Confinement rule shared by read_transcript/export_transcript/open_transcript.
 
-    Accepts a path under the CURRENT transcripts dir or the default one — a
+    Accepts a path under the CURRENT transcripts dir or the default one \u2014 a
     transcript written before a folder change (see choose_folder) stays
     openable in the common case instead of looking deleted.
     """
@@ -1155,14 +1221,14 @@ def _read_transcript_data(target: Path) -> dict:
         try:
             return json.loads(sidecar.read_text(encoding="utf-8"))
         except (OSError, ValueError):
-            pass  # corrupt sidecar — fall through to the legacy .txt parse below
+            pass  # corrupt sidecar \u2014 fall through to the legacy .txt parse below
     raw = target.read_text(encoding="utf-8")
     header, _, body = raw.partition("\n\n")
     header_lines = header.splitlines()
     title = header_lines[0] if len(header_lines) > 0 else ""
     show_date = header_lines[1] if len(header_lines) > 1 else ""
     url = header_lines[2] if len(header_lines) > 2 else ""
-    show, sep, date = show_date.partition(" — ")
+    show, sep, date = show_date.partition(" \u2014 ")
     if not sep:
         show, date = show_date, ""
     return {
@@ -1186,7 +1252,7 @@ def _render_srt(segments: list[dict]) -> str:
         start = seg.get("start") or 0.0
         end = seg.get("end")
         if end is None:
-            end = start + 4.0  # no real end time — give it a readable-length card
+            end = start + 4.0  # no real end time \u2014 give it a readable-length card
         blocks.append(
             f"{i}\n{_srt_timestamp(start)} --> {_srt_timestamp(end)}\n{(seg.get('text') or '').strip()}\n"
         )
@@ -1222,13 +1288,14 @@ class Api:
 
     def __init__(self):
         self._window = None
+        self._event_sink = None
         self._worker = Worker(self._emit, on_transcribed=self._maybe_auto_train)
         self._trainer = TrainWorker(self._emit)
         self._stop = threading.Event()
 
     def _maybe_auto_train(self, show: dict, episode: dict, transcript_path: Path) -> None:
         """Called by Worker right after a successful transcription. Chains
-        into the training queue only if this show has Auto-train on — a
+        into the training queue only if this show has Auto-train on \u2014 a
         manual "Generate Training" click is the default path."""
         data = load_store()
         current = _find_show(data, show["id"])
@@ -1238,9 +1305,15 @@ class Api:
     def _attach(self, window) -> None:
         self._window = window
 
+    def _attach_event_sink(self, sink) -> None:
+        self._event_sink = sink
+
     # -- event push ---------------------------------------------------------
 
     def _emit(self, name: str, payload: dict) -> None:
+        if self._event_sink is not None:
+            self._event_sink(name, payload)
+            return
         if self._window is None:
             return
         try:
@@ -1304,7 +1377,7 @@ class Api:
         # means every episode shows up twice and, on auto, gets transcribed
         # twice. Names differ slightly between the two ("... News" vs
         # "... News and Analysis"), so match on a normalized prefix and warn
-        # rather than refuse — "The Daily" and "The Daily Show" are different.
+        # rather than refuse - "The Daily" and "The Daily Show" are different.
         twin = next((s for s in load_store()["shows"] if _same_show_name(s["name"], name)), None)
         warning = (
             (
@@ -1317,7 +1390,7 @@ class Api:
 
         # parse_feed is a network call; keep it outside the lock. Take the
         # lock only for the read-modify-write, and re-read + re-check the
-        # duplicate here against the fresh store — a concurrent add_show for
+        # duplicate here against the fresh store - a concurrent add_show for
         # the same feed_url may have landed while the fetch above was in
         # flight.
         with _store_lock:
@@ -1429,7 +1502,7 @@ class Api:
                 f["id"] != folder_id and f["name"].strip().lower() == name.lower() for f in data["folders"]
             ):
                 raise ValueError("A folder with that name already exists.")
-            folder["name"] = name  # "unsorted" may be renamed — its id never changes
+            folder["name"] = name  # "unsorted" may be renamed \u2014 its id never changes
             save_store(data)
         return folder
 
@@ -1491,13 +1564,13 @@ class Api:
         with _store_lock:
             data = load_store()
             settings = data["settings"]
-            # Validate the RESULTING combination, not just the patched field —
+            # Validate the RESULTING combination, not just the patched field -
             # a patch may carry only one of the two keys, so check against
             # whatever the other one would end up being.
             merged_model = patch.get("model", settings.get("model", DEFAULT_SETTINGS["model"]))
             merged_lang = patch.get("lang", settings.get("lang", DEFAULT_SETTINGS["lang"]))
             if merged_lang == "ko" and merged_model.endswith(".en"):
-                raise ValueError("Korean needs the large-v3 model — pick it under Model first.")
+                raise ValueError("Korean needs the large-v3 model \u2014 pick it under Model first.")
             if "model" in patch:
                 settings["model"] = patch["model"]
             if "lang" in patch:
@@ -1575,12 +1648,30 @@ class Api:
             save_credentials(creds)
         return self.get_training_settings()["data"]
 
-    @bridge
-    def choose_folder(self) -> dict:
+    def _pick_folder(self) -> str | None:
+        if self._window is None:
+            return webserver.pick_folder()
         import webview
 
         res = self._window.create_file_dialog(webview.FOLDER_DIALOG)
-        if not res:
+        return res[0] if res else None
+
+    def _pick_files(self) -> list[str]:
+        if self._window is None:
+            return webserver.pick_files()
+        import webview
+
+        res = self._window.create_file_dialog(
+            webview.OPEN_DIALOG,
+            allow_multiple=True,
+            file_types=(webserver.MEDIA_LABEL, "All files (*.*)"),
+        )
+        return list(res or [])
+
+    @bridge
+    def choose_folder(self) -> dict:
+        picked = self._pick_folder()
+        if not picked:
             return {"changed": False, "transcripts_dir": str(transcripts_dir())}
         old_dir = transcripts_dir()
         # Count what's about to be orphaned before we point the app elsewhere,
@@ -1589,24 +1680,18 @@ class Api:
         orphaned = sum(1 for _ in old_dir.rglob("*.txt"))
         with _store_lock:
             data = load_store()
-            data["settings"]["transcripts_dir"] = str(res[0])
+            data["settings"]["transcripts_dir"] = picked
             save_store(data)
         return {
             "changed": True,
-            "transcripts_dir": str(res[0]),
+            "transcripts_dir": picked,
             "previous": str(old_dir),
             "orphaned": orphaned,
         }
 
     @bridge
     def choose_files(self) -> dict:
-        import webview
-
-        res = self._window.create_file_dialog(
-            webview.OPEN_DIALOG,
-            allow_multiple=True,
-            file_types=("Audio and video (*.mp3;*.m4a;*.wav;*.mp4)", "All files (*.*)"),
-        )
+        res = self._pick_files()
         if not res:
             return {"queued": []}
         data = load_store()
@@ -1660,7 +1745,7 @@ class Api:
     def dismiss_episode(self, show_id: str, episode_id: str) -> dict:
         """Skip an episode for good: stop any job on it, drop its row, and mark
         it seen so neither the hourly poll nor "Check now" offers it again.
-        Retry/Transcribe on the same episode later still works — a fresh
+        Retry/Transcribe on the same episode later still works \u2014 a fresh
         submit clears the dismissal."""
         status = self._worker.dismiss(episode_id)
         _mark_seen(show_id, episode_id)
@@ -1683,7 +1768,7 @@ class Api:
 
     @bridge
     def generate_training(self, transcript_path: str) -> dict:
-        """Manual "Generate Training" trigger — everything it needs comes from
+        """Manual "Generate Training" trigger \u2014 everything it needs comes from
         the transcript file itself (+ its .json sidecar), so this works from
         the Library/Reader without needing the original show/episode objects
         still to be around (a show removed or a feed rewound doesn't matter)."""
@@ -1756,7 +1841,7 @@ class Api:
         legacy = bool(data.get("legacy"))
         if fmt == "srt" and legacy:
             raise ValueError(
-                "No timing data for this transcript — it predates timestamped "
+                "No timing data for this transcript \u2014 it predates timestamped "
                 "transcripts. Delete the .txt and transcribe the episode again "
                 "to get .srt export."
             )
@@ -1784,7 +1869,7 @@ class Api:
                 continue
             for f in sorted(show_folder.glob("*.txt"), reverse=True):
                 if scanned >= 200:
-                    # Cap hit — don't silently pretend this is the full result set.
+                    # Cap hit - don't silently pretend this is the full result set.
                     return {"results": out, "truncated": True}
                 scanned += 1
                 try:
@@ -1830,6 +1915,12 @@ class Api:
 
     # -- background poller --------------------------------------------------
 
+    def _start_engine(self) -> None:
+        """Start the worker, the trainer and the hourly feed poller."""
+        self._worker.start()
+        self._trainer.start()
+        self._start_poller(3600)
+
     def _start_poller(self, interval_seconds: int = 3600) -> None:
         def loop():
             while not self._stop.is_set():
@@ -1870,7 +1961,7 @@ def _open_in_explorer(target: Path) -> None:
 
 
 def check_all() -> dict:
-    """Poll every show. Never raises — per-show failures come back as errors."""
+    """Poll every show. Never raises \u2014 per-show failures come back as errors."""
     data = load_store()
     shows = data["shows"]
     found: list[dict] = []
@@ -1973,8 +2064,25 @@ def sweep() -> int:
             pass
 
     started = datetime.now()
-    say(f"=== {APP_NAME} sweep — {started.strftime('%Y-%m-%d %H:%M:%S')} ===")
+    say(f"=== {APP_NAME} sweep \u2014 {started.strftime('%Y-%m-%d %H:%M:%S')} ===")
 
+    # An open Sori already polls hourly, and another sweep may still be
+    # transcribing. A second engine on the same shows.json would queue every
+    # new episode twice.
+    lock = EngineLock(state_dir())
+    if not lock.acquire():
+        say(
+            f"{APP_NAME} is already running in this folder and checks your shows itself. This sweep did nothing."
+        )
+        _append_log(log_path, lines)
+        return 0
+    try:
+        return _sweep(say, lines, log_path, started)
+    finally:
+        lock.release()
+
+
+def _sweep(say, lines: list[str], log_path: Path, started: datetime) -> int:
     data = load_store()
     if not data["shows"]:
         say(f"No shows subscribed yet. Open {APP_NAME} and add one.")
@@ -2028,7 +2136,7 @@ def sweep() -> int:
             tail = (
                 f" (will try again next sweep, {left} left)"
                 if left
-                else " (giving up — use Retry in the app)"
+                else " (giving up \u2014 use Retry in the app)"
             )
             say(f"    failed: {message}{tail}")
             continue
@@ -2046,20 +2154,20 @@ def sweep() -> int:
 
     elapsed = (datetime.now() - started).total_seconds()
     say(
-        f"Done in {elapsed:.1f}s — {done} transcribed, {failed} failed, {skipped} skipped, "
+        f"Done in {elapsed:.1f}s \u2014 {done} transcribed, {failed} failed, {skipped} skipped, "
         f"{trained} trained, {train_failed} training failed."
     )
     _append_log(log_path, lines)
-    return 0
+    return 1 if result["errors"] or failed or train_failed else 0
 
 
 def selftest() -> int:
     """Import every backend and report. Proves a packaged build is complete.
 
-    The packaged app has no console, so this writes to sweep.log too — it is
+    The packaged app has no console, so this writes to sweep.log too \u2014 it is
     the one command to run when something "doesn't work" on another machine.
     """
-    lines = [f"=== {APP_NAME} self-test — {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ==="]
+    lines = [f"=== {APP_NAME} self-test \u2014 {datetime.now().strftime('%Y-%m-%d %H:%M:%S')} ==="]
     lines.append(f"frozen: {bool(getattr(sys, 'frozen', False))}  python: {sys.version.split()[0]}")
     lines.append(f"state dir: {state_dir()}")
     lines.append(
@@ -2085,12 +2193,12 @@ def selftest() -> int:
             lines.append(f"  ok    {module:<16} {version:<12} ({what})")
         except Exception as exc:
             failures += 1
-            lines.append(f"  FAIL  {module:<16} {'':<12} ({what}) — {exc}")
+            lines.append(f"  FAIL  {module:<16} {'':<12} ({what}) \u2014 {exc}")
 
     # Not third-party packages, so not in `checks` above: prove the app's own
     # new modules import cleanly in a frozen build too, and that the vendored
     # bundled font assets actually landed where PyInstaller was told to put
-    # them (Sori.spec datas) — a missing/misnamed data entry wouldn't show up
+    # them (Sori.spec datas) - a missing/misnamed data entry wouldn't show up
     # as an import failure otherwise. The fonts are OFL and ship in every
     # checkout; only engine/ is optional.
     # The private deck engine is optional (see themes/README.md): a checkout
@@ -2112,7 +2220,7 @@ def selftest() -> int:
         lines.append(f"  ok    deck_render      {'':<12} (training deck rendering, {detail})")
     except Exception as exc:
         failures += 1
-        lines.append(f"  FAIL  deck_render      {'':<12} (training deck rendering) — {exc}")
+        lines.append(f"  FAIL  deck_render      {'':<12} (training deck rendering) \u2014 {exc}")
 
     lines.append("All backends present." if not failures else f"{failures} backend(s) missing.")
     for line in lines:
@@ -2145,6 +2253,14 @@ def run_window() -> int:
         print(f"UI not found at {index}", file=sys.stderr)
         return 1
 
+    lock = EngineLock(state_dir())
+    if not lock.acquire():
+        webserver._tell_user(
+            f"{APP_NAME} is already running in this folder (in your browser, or as a sweep). "
+            "Stop it first, then open the window again."
+        )
+        return 1
+
     api = Api()
     window = webview.create_window(
         APP_NAME,
@@ -2161,21 +2277,31 @@ def run_window() -> int:
     )
     api._attach(window)
 
-    def on_start():
-        api._worker.start()
-        api._trainer.start()
-        api._start_poller(3600)
-
     webview.start(
-        on_start, debug=bool(os.environ.get("SORI_DEBUG") or os.environ.get("PODCAST_STUDIO_DEBUG"))
+        api._start_engine, debug=bool(os.environ.get("SORI_DEBUG") or os.environ.get("PODCAST_STUDIO_DEBUG"))
     )
     api._shutdown()
+    lock.release()
     return 0
+
+
+def run_server(open_browser: bool = True) -> int:
+    """Run Sori as a local web app. This is what double-clicking the exe does."""
+    ui_dir = app_dir() / "ui"
+    if not (ui_dir / "index.html").exists():
+        print(f"UI not found at {ui_dir}", file=sys.stderr)
+        return 1
+
+    api = Api()
+
+    code = webserver.run(api, ui_dir, state_dir(), api._start_engine, open_browser=open_browser)
+    api._shutdown()
+    return code
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        prog="app.py", description=f"{APP_NAME} — desktop app for podcast-transcriber."
+        prog="app.py", description=f"{APP_NAME} \u2014 desktop app for podcast-transcriber."
     )
     parser.add_argument(
         "--sweep",
@@ -2187,11 +2313,25 @@ def main(argv: list[str] | None = None) -> int:
         action="store_true",
         help="Check that every transcription backend imports, then exit.",
     )
+    parser.add_argument(
+        "--window",
+        action="store_true",
+        help="Open the older desktop window instead of the browser.",
+    )
+    parser.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Start Sori without opening a browser tab.",
+    )
     args = parser.parse_args(argv)
     sori_log.setup(log_file=state_dir() / "sori.log")
     if args.selftest:
         return selftest()
-    return sweep() if args.sweep else run_window()
+    if args.sweep:
+        return sweep()
+    if args.window:
+        return run_window()
+    return run_server(open_browser=not args.no_browser)
 
 
 if __name__ == "__main__":

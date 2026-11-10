@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""themes/studio.py — Sori's default deck theme.
+"""themes/studio.py \u2014 Sori's default deck theme.
 
 An unbranded editorial theme covering every slide kind in
 `training.SLIDE_KINDS` plus the synthesized cover and closing. It ships as the
@@ -12,7 +12,7 @@ The proportions, palette roles and composition rules are lifted from a working
 design system rather than invented: warm paper ground instead of pure white,
 ink with a blue undertone instead of black, ONE load-bearing accent, and a
 second "pop" colour spent on roughly one element per deck. The type scale is
-the important part — two anchors (a display size and a body size) with nothing
+the important part \u2014 two anchors (a display size and a body size) with nothing
 in between. Mid-sized subheads are what make generated decks read as
 generated, so there is no mid size here to reach for.
 
@@ -50,7 +50,7 @@ PANEL = "ECECE6"
 INK = "14171C"
 MUTED = "6F7172"
 LINE = "D7D8D6"
-METAL = "C9A24B"  # hairline gold — structure, never text
+METAL = "C9A24B"  # hairline gold \u2014 structure, never text
 ACCENT = "0B4DA2"  # cobalt: THE load-bearing colour
 POP = "C8202E"  # spent once or twice per deck, never as body colour
 
@@ -444,16 +444,26 @@ def _data(slide, s):
     _bg(slide, PAPER)
     _chrome(slide, s)
     _eyebrow_at(slide, s.get("rail_label"), 1.20)
+    # A heading is optional here. When there is one it takes a single quiet
+    # line and the numeral block moves down to make room; without one the
+    # slide is laid out exactly as before.
+    heading = (s.get("heading") or "").strip()
+    drop = 0.0
+    if heading:
+        tf = _txt(slide, PAD_X, 1.52, COL_W, 0.36)
+        p = _para(tf, True)
+        _run(p, heading, FONT_DISPLAY, _fit(heading, COL_W, 18.0, 12.0, 1), INK, bold=True)
+        drop = 0.32
     hero = s.get("hero_stat") or {}
     num = str(hero.get("num", "")).strip()
-    tf = _txt(slide, PAD_X, 1.60, COL_W * 0.8, 1.7)
+    tf = _txt(slide, PAD_X, 1.60 + drop, COL_W * 0.8, 1.7)
     p = _para(tf, True)
     fam, bd = _num()
     _run(p, num, fam, T_STAT, ACCENT, bold=bd)
     label = (hero.get("label") or "").strip()
     if label:
         pt = _fit(label, COL_W * 0.7, T_H1, 26.0, 1)
-        tf = _txt(slide, PAD_X, 3.30, COL_W * 0.7, 1.1)
+        tf = _txt(slide, PAD_X, 3.30 + drop, COL_W * 0.7, 1.1 - drop)
         p = _para(tf, True)
         _run(p, label, FONT_DISPLAY, pt, INK, bold=True)
     _rule(slide, 4.50)
@@ -650,8 +660,8 @@ def _chart(slide, s):
 
 def _scorecard(slide, s):
     """Three chips per row, n filled. training.py ships every row at level 0 on
-    purpose — the ratings belong to the room running the session, not to the
-    episode — so an all-empty scorecard is correct, not a bug."""
+    purpose \u2014 the ratings belong to the room running the session, not to the
+    episode \u2014 so an all-empty scorecard is correct, not a bug."""
     _bg(slide, PAPER)
     _chrome(slide, s)
     body = _head_block(slide, s)

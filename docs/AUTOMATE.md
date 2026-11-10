@@ -31,7 +31,9 @@ check it, open the app (the Library shows the new files) or read the last
 block of `%USERPROFILE%\Sori\sweep.log`; each block ends with `Done in Ns:
 N transcribed, N failed, N skipped, N trained, N training failed.` Remove
 it with `schtasks /delete /tn "Sori Daily Sweep" /f`. The PC has to be on
-and awake at 09:03; a missed run is not caught up.
+and awake at 09:03; a missed run is not caught up. If Sori is already open
+when the task fires, the sweep does nothing, because the open app checks your
+shows hourly on its own.
 
 ## (b) Cowork schedule (the Claude-native door)
 
@@ -73,7 +75,7 @@ are in [`cloud/ROUTINE.md`](../cloud/ROUTINE.md); the output layout is in
 [`cloud/README.md`](../cloud/README.md).
 
 What lands where: a private repo, proposed as `<owner>/sori-output`
-(handoff Decision 2, recommended, not yet confirmed by the owner). Its
+(the recommended design, not yet confirmed by the owner). Its
 `state/shows.json` is the cloud's own subscription list (YouTube channels
 only), and each run commits `state/Transcripts/...`, `state/sweep.log`, and
 any decks under `state/Trainings/`, with the message `sweep <UTC stamp>: N

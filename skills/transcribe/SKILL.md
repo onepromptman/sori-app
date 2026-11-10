@@ -16,22 +16,26 @@ description: >
 when installed as a plugin, otherwise the current checkout of
 https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
 
-## One-time setup (check before the first command)
+## Get ready (every time, before the first command)
 
 ```bash
-cd "$SORI"
-python -m pip install -r requirements.txt        # transcription only
+python "$SORI/preflight.py" transcribe
 ```
 
-The first Whisper run downloads a ~150 MB model into the user cache; say so
-before it happens.
+This checks Python (3.11 or newer), sets up Sori's own environment the first
+time, and prints `SORI_PY=<path>` on its last line. `PY` below is that path:
+run every Sori script with it. Tell the user anything it prints after `note:`
+before you go on. If it ends with a line starting `!!`, repeat that line to
+the user and stop. Never install packages by hand. The first
+Whisper run downloads a model of about 150 MB into the user cache; the
+preflight says so when that is still ahead, and so must you.
 
 ## Verbs
 
 ### 1. Transcript from a YouTube video (fastest, uses captions)
 
 ```bash
-python "$SORI/transcribe.py" youtube "<youtube url>" --out "<name>.txt" [--lang en]
+"$PY" "$SORI/transcribe.py" youtube "<youtube url>" --out "<name>.txt" [--lang en]
 ```
 
 Works on any public video with captions. No captions: fall back to verb 3
@@ -40,8 +44,8 @@ with the audio URL, or tell the user the video has no captions.
 ### 2. Find and transcribe an episode from a podcast RSS feed
 
 ```bash
-python "$SORI/transcribe.py" list "<rss url>" [--search "<words>"] [--limit 20]
-python "$SORI/transcribe.py" episode "<rss url>" "<title words>" --out "<name>.txt" [--model base.en]
+"$PY" "$SORI/transcribe.py" list "<rss url>" [--search "<words>"] [--limit 20]
+"$PY" "$SORI/transcribe.py" episode "<rss url>" "<title words>" --out "<name>.txt" [--model base.en]
 ```
 
 `list` first when the user names a show but not an exact episode. `episode`
@@ -51,12 +55,17 @@ minutes on CPU.
 ### 3. Any MP3 URL or local audio file
 
 ```bash
-python "$SORI/transcribe.py" audio "<mp3 url or path>" --out "<name>.txt" [--model base.en] [--device cpu]
+"$PY" "$SORI/transcribe.py" audio "<mp3 url or path>" --out "<name>.txt" [--model base.en] [--device cpu]
 ```
 
 `--model`: `base.en` (default, fast, English); drop `.en` for other
 languages; `small`/`medium`/`large-v3` are slower and more accurate.
-`--device cuda` uses an NVIDIA GPU when one is present.
+`--device cuda` uses an NVIDIA GPU when one is present. The saved file starts
+with Sori's three-line header; the title is the file name unless you pass
+`--title` (and `--show`, `--date` when the user gives them).
+
+A command that cannot finish prints one line starting `!!` and exits 1
+(feed unreachable, not a feed, file not found). Repeat it to the user.
 
 ## After a transcript lands
 

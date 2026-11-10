@@ -15,12 +15,23 @@ description: >
 `SORI` below is the folder that holds `app.py`: `${CLAUDE_PLUGIN_ROOT}`
 when installed as a plugin, otherwise the current checkout of
 https://github.com/onepromptman/sori-app. On Windows, `python` may be `py`.
-Setup, once: `cd "$SORI" && python -m pip install -r requirements-app.txt`.
+
+## Get ready (every time, before the first command)
+
+```bash
+python "$SORI/preflight.py" sweep
+```
+
+This checks Python (3.11 or newer), sets up Sori's own environment the first
+time, and prints `SORI_PY=<path>` on its last line. `PY` below is that path:
+run every Sori script with it. Tell the user anything it prints after `note:`
+before you go on. If it ends with a line starting `!!`, repeat that line to
+the user and stop. Never install packages by hand.
 
 ## Run it
 
 ```bash
-python "$SORI/app.py" --sweep
+"$PY" "$SORI/app.py" --sweep
 ```
 
 State lives in `%USERPROFILE%\Sori`; `SORI_HOME=<dir>`
@@ -29,20 +40,22 @@ user's real subscriptions. The sweep reads `shows.json`, writes transcripts
 to `Transcripts\<Show>\` and decks to `Trainings\<Show>\`, prints to stdout
 and appends the same lines to `sweep.log`.
 
-Before the first sweep on a machine, run `python "$SORI/shows.py" list`
+Before the first sweep on a machine, run `"$PY" "$SORI/shows.py" list`
 and look at the auto-train column: a show with auto-train on and a saved
 key makes one paid Claude call per new episode. Say so before running if
 any show is auto-train. A sweep with no auto-train shows is free.
 
 Whisper on CPU takes minutes per episode and the first run downloads a
-~150 MB model; run the sweep in the background for long queues. Never run
-two Sori instances (window or sweep) on one state dir at once; both
-auto-queue the same episodes.
+model of about 150 MB; run the sweep in the background for long queues.
+
+Only one Sori engine runs on a state folder at a time. If the app or another
+sweep is already running there, this sweep prints a line ending `This sweep
+did nothing.` and exits 0. Say so and stop; do not retry in a loop.
 
 ## Read the output (same shape in stdout and sweep.log)
 
 ```
-=== Sori sweep — 2026-09-05 09:03:01 ===
+=== Sori sweep - 2026-09-05 09:03:01 ===
 Checked 3 show(s): 2 new episode(s).
   ! <Show>: <feed error>                          (only when a fetch failed)
   - [auto] The Daily: 2026-09-05 Some title
@@ -51,11 +64,11 @@ Checked 3 show(s): 2 new episode(s).
   > transcribing: Some title
     downloading the Whisper model (first run only)…
     saved: ...\Transcripts\The Daily\2026-09-05 - Some title.txt
-    failed: <reason> (will try again next sweep, 2 left)   |  (giving up — use Retry in the app)
+    failed: <reason> (will try again next sweep, 2 left)   |  (giving up - use Retry in the app)
   > generating training: Some title
     saved: ...\Trainings\The Daily\2026-09-05 - Some title.pptx
     training failed: <reason>
-Done in 135.2s — 1 transcribed, 0 failed, 1 skipped, 0 trained, 0 training failed.
+Done in 135.2s - 1 transcribed, 0 failed, 1 skipped, 0 trained, 0 training failed.
 ```
 
 `No shows subscribed yet.` means `shows.json` is empty for this
@@ -75,7 +88,8 @@ re-running.
 4. `[manual]` rows: new episodes the user can transcribe by hand
    (`/sori:transcribe`) or switch to Auto (`/sori:shows`).
 
-Exit code is 0 even when episodes failed; read the lines, not the code.
+Feed, transcription, or training failures make the exit code nonzero. Read
+the individual lines to report which item failed and whether it will retry.
 
 ## Never
 

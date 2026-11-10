@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-train.py — turn one transcript into a training deck (.pptx) + study guide (.md).
+train.py \u2014 turn one transcript into a training deck (.pptx) + study guide (.md).
 
 The same step the Sori window runs from its Training button, exposed as a
 command so it can be driven from a shell, a script, or a Claude Code / Cowork
@@ -25,7 +25,7 @@ saved by the Sori app or `settings.py api-key set`
 accepted on the command line (argv lands in shell history and process
 listings) and never printed.
 
-Transcripts written by Sori start with three header lines (title, "show —
+Transcripts written by Sori start with three header lines (title, "show \u2014
 date", source URL); those are read for the deck metadata when --title/--show/
 --date are not given. Any other .txt works too, it just gets an empty header.
 """
@@ -65,7 +65,7 @@ def _header_meta(text: str) -> dict:
     meta = {"title": "", "show": "", "date": ""}
     if len(lines) >= 2:
         meta["title"] = lines[0].strip()
-        m = re.match(r"^(.*?)\s+[—-]\s+(\d{4}-\d{2}-\d{2})\s*$", lines[1].strip())
+        m = re.match(r"^(.*?)\s+[\u2014-]\s+(\d{4}-\d{2}-\d{2})\s*$", lines[1].strip())
         if m:
             meta["show"], meta["date"] = m.group(1).strip(), m.group(2)
     return meta
@@ -162,7 +162,7 @@ def main(argv: list[str] | None = None) -> int:
     try:
         if outline_src is not None:
             print(f"rendering training for: {meta['title']!r}  (from {args.outline}, no API call)")
-            result = tr.result_from_outline(outline_src, meta)
+            result = tr.result_from_outline(outline_src, meta, text)
         else:
             print(f"generating training for: {meta['title']!r}  (model {args.model}, one paid API call)")
             result = tr.generate_training(text, meta, key, model=args.model)

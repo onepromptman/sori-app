@@ -1,4 +1,4 @@
-/* Sori — UI logic.
+/* Sori \u2014 UI logic.
    Talks to app.py's Api class over the pywebview bridge. Every bridge call
    answers {ok, data|error}; call() unwraps that and turns failures into
    toasts, so view code never has to think about transport.
@@ -76,7 +76,56 @@
 
   // ---------------------------------------------------------------- bridge
 
+  // Served by webserver.py, the page carries a per-launch token and calls the
+  // engine over HTTP. The older desktop window and the UI preview have no
+  // token and use window.pywebview.api below.
+  var tokenMeta = document.querySelector('meta[name="sori-token"]');
+  var httpToken = tokenMeta ? tokenMeta.getAttribute("content") : null;
+
+  function httpPost(path, body) {
+    return fetch(path, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "X-Sori-Token": httpToken },
+      body: JSON.stringify(body)
+    }).catch(function () {
+      throw new Error("Sori isn't running. Double-click the Sori icon to start it.");
+    }).then(function (res) {
+      if (res.status === 403) {
+        // Sori restarted since this tab loaded, so the token changed.
+        setTimeout(function () { location.reload(); }, 500);
+        throw new Error("Sori restarted. Reloading…");
+      }
+      return res.json();
+    });
+  }
+
+  var httpApi = new Proxy({}, {
+    get: function (_target, method) {
+      // apiReady() resolves with this object, and a promise checks for .then.
+      if (method === "then") return undefined;
+      return function () {
+        return httpPost("/api/" + encodeURIComponent(method), Array.prototype.slice.call(arguments));
+      };
+    }
+  });
+
+  function connectEvents() {
+    if (!httpToken) return;
+    var stream = new EventSource("/events?token=" + encodeURIComponent(httpToken));
+    stream.onmessage = function (ev) {
+      var message = JSON.parse(ev.data);
+      window.studioEvent(message.name, message.payload);
+    };
+    stream.onerror = function () {
+      // Network errors retry on their own. CLOSED means Sori came back with a
+      // new token, so this tab needs the new page.
+      if (stream.readyState === EventSource.CLOSED) location.reload();
+    };
+    state.eventStream = stream;
+  }
+
   function apiReady() {
+    if (httpToken) return Promise.resolve(httpApi);
     return new Promise(function (resolve, reject) {
       if (window.pywebview && window.pywebview.api) return resolve(window.pywebview.api);
       var settled = false;
@@ -185,7 +234,7 @@
     if (/youtube\.com|youtu\.be/i.test(v)) return { hint: "YouTube channel detected", ok: true, kind: "youtube" };
     if (v.charAt(0) === "@") return { hint: "YouTube handle detected", ok: true, kind: "youtube" };
     if (/^https?:/i.test(v)) return { hint: "RSS feed detected", ok: true, kind: "rss" };
-    return { hint: "Keep typing — paste a link or @handle", ok: false, kind: null };
+    return { hint: "Keep typing \u2014 paste a link or @handle", ok: false, kind: null };
   }
 
   function renderAddHint() {
@@ -208,8 +257,8 @@
   function renderRail() {
     var list = $("rail-list");
     // Only the bare-minimum store (nothing subscribed, no folder made yet)
-    // gets the pure first-run copy. The moment a folder exists — even an
-    // empty one the user just created — it must be visible, so fall through
+    // gets the pure first-run copy. The moment a folder exists - even an
+    // empty one the user just created - it must be visible, so fall through
     // to the skeleton below instead of short-circuiting the whole rail.
     if (!state.shows.length && state.folders.length <= 1) {
       list.innerHTML = '<li class="rail-empty">Nothing subscribed yet. Paste a link above to start watching a show.</li>';
@@ -279,7 +328,7 @@
 
   function moveMenuHtml(s) {
     // state.folders already carries the store's permanent "unsorted" entry
-    // (app.py guarantees it exists) — do not append a synthetic duplicate.
+    // (app.py guarantees it exists) - do not append a synthetic duplicate.
     var opts = state.folders.map(function (f) { return { id: f.id, name: f.name }; });
     return '<div class="move-menu">' + opts.map(function (f) {
       var cur = (s.folder || UNSORTED_ID) === f.id;
@@ -290,9 +339,9 @@
   function renderRailFoot() {
     var path = state.settings.transcripts_dir || "";
     var pathEl = $("transcripts-path");
-    pathEl.textContent = path || "—";
+    pathEl.textContent = path || "\u2014";
     pathEl.title = path;
-    $("settings-folder-path").textContent = path || "—";
+    $("settings-folder-path").textContent = path || "\u2014";
     $("settings-folder-path").title = path;
 
     var working = 0;
@@ -359,7 +408,7 @@
       if (byId[id]) return;
       var j = state.jobs[id];
       if (j.show_id && state.removedShows && state.removedShows[j.show_id]) return;
-      // The backend doesn't (yet) send url/kind/show_name on job snapshots —
+      // The backend doesn't (yet) send url/kind/show_name on job snapshots -
       // read them defensively so this row upgrades for free once it does.
       rows.push({
         ep: {
@@ -384,7 +433,7 @@
     $("queue-pill").textContent = String(working + queued);
 
     var headEl = $("queue-head");
-    headEl.textContent = working ? "Working — " + working + " of " + (working + queued) + " · newest first" : "Newest first";
+    headEl.textContent = working ? "Working \u2014 " + working + " of " + (working + queued) + " · newest first" : "Newest first";
 
     // Same live-row set the click handler acts on, so the count on the
     // button can never drift from what a click would actually queue.
@@ -395,7 +444,7 @@
     $("dismiss-all").disabled = rows.filter(isDismissable).length === 0;
 
     var list = $("episode-list");
-    // Rows are computed above BEFORE any empty-state decision — orphan job
+    // Rows are computed above BEFORE any empty-state decision - orphan job
     // rows (e.g. file imports, which never live in state.shows) must still
     // render even when nothing has been subscribed to yet.
     if (!rows.length) {
@@ -427,7 +476,7 @@
     var err = (job && job.error) || e.last_error || null;
     var cancelling = !!(job && (job.cancelling || job.status === "cancelling"));
 
-    // Orphan rows (imports) synthesize an episode with no url/kind — sending
+    // Orphan rows (imports) synthesize an episode with no url/kind - sending
     // those through transcribe/retry is guaranteed to fail server-side, so
     // suppress the action rather than offer a button that can't work. The
     // one exception: a failed/cancelled job whose own snapshot still carries
@@ -479,7 +528,7 @@
     // Dismiss = "skip this one for good". Not offered mid-run (that's Stop)
     // and not for file imports, which have no feed to be re-offered from.
     var dismissHtml = isDismissable(row)
-      ? '<button class="ep-dismiss" data-act="dismiss" title="Dismiss — skip this episode, don\'t offer it again">&times;</button>'
+      ? '<button class="ep-dismiss" data-act="dismiss" title="Dismiss \u2014 skip this episode, don\'t offer it again">&times;</button>'
       : "";
 
     return '<li class="ep" data-id="' + esc(e.id) + '"' + titleAttr + '>' +
@@ -543,7 +592,7 @@
   function stopEpisode(id) {
     // stop_episode's return value is a transient {id, status} status word
     // ("cancelling"/"not queued"/"finished") from the worker call, not a job
-    // snapshot — writing it into state.jobs wipes the real job's
+    // snapshot - writing it into state.jobs wipes the real job's
     // progress/title/path and stalls polling. The worker emits the actual
     // "cancelled" job over the studioEvent channel; just re-render here.
     call("stop_episode", id).then(function () {
@@ -762,6 +811,7 @@
         toast("Add a Claude API key in Settings first.", "bad");
         return;
       }
+      if (nextTrain && !window.confirm("Auto-train sends each new transcript to Anthropic and uses paid API credits. Enable it for this show?")) return;
       act.setAttribute("aria-checked", nextTrain ? "true" : "false");
       call("set_auto_train", id, nextTrain).then(function () {
         show.auto_train = nextTrain;
@@ -816,6 +866,22 @@
   }
   $("change-folder-btn").addEventListener("click", changeFolder);
   $("settings-change-folder").addEventListener("click", changeFolder);
+
+  function stopSori() {
+    if (!window.confirm("Stop Sori? Any transcription in progress stops, and shows aren't checked until you open Sori again.")) return;
+    if (state.eventStream) state.eventStream.close();
+    clearInterval(state.statusTimer);
+    clearInterval(state.pollTimer);
+    clearInterval(state.trainPollTimer);
+    httpPost("/quit", []).then(function () {
+      var note = document.createElement("p");
+      note.style.cssText = "font:16px system-ui,sans-serif;text-align:center;margin-top:30vh";
+      note.textContent = "Sori has stopped. You can close this tab.";
+      document.body.replaceChildren(note);
+    }).catch(function (e) { toast(e.message, "bad"); });
+  }
+  $("stop-sori").addEventListener("click", stopSori);
+  if (httpToken) $("stop-sori-group").classList.remove("hidden");
 
   $("hamburger").addEventListener("click", function () {
     state.railOpen = !state.railOpen;
@@ -887,12 +953,12 @@
     countEl.textContent = results.length + " matching";
     if (!results.length) {
       body.innerHTML = '<div class="lib-quiet">Nothing matches “' + esc(state.librarySearch) + '”.</div>' +
-        (state.librarySearchTruncated ? '<div class="lib-quiet">Search capped — showing first matches.</div>' : "");
+        (state.librarySearchTruncated ? '<div class="lib-quiet">Search capped \u2014 showing first matches.</div>' : "");
       return;
     }
     var searchGroups = groupByShow(results);
     body.innerHTML = searchGroups.map(function (g) { return groupHtml(g, true); }).join("") +
-      (state.librarySearchTruncated ? '<div class="lib-quiet">Search capped — showing first matches.</div>' : "");
+      (state.librarySearchTruncated ? '<div class="lib-quiet">Search capped \u2014 showing first matches.</div>' : "");
   }
 
   function groupHtml(g, withSnippet) {
@@ -980,8 +1046,8 @@
     }).join("");
 
     $("training-key-desc").textContent = ts.has_api_key
-      ? "Key ending in ····" + (ts.api_key_last4 || "") + " — training generation is on."
-      : "Not set — training generation needs your own Anthropic API key. Unlike transcription, this step is not free: it calls the Claude API per training.";
+      ? "Key ending in ····" + (ts.api_key_last4 || "") + ". Training sends transcripts to Anthropic and uses paid API credits."
+      : "Not set. Training needs your Anthropic API key, sends transcripts to Anthropic, and uses paid API credits.";
     $("training-key-input").value = "";
     $("training-key-input").placeholder = ts.has_api_key ? "Replace key…" : "sk-ant-…";
 
@@ -1187,7 +1253,7 @@
     if (job.status === "failed") return '<span class="reader-train-bad">' + esc(job.error || "Training failed") + "</span>";
     if (job.status === "cancelled") return "Training cancelled";
     if (job.status === "done") {
-      return 'Training ready — ' +
+      return 'Training ready \u2014 ' +
         '<button class="reader-train-link" data-act="open-deck">Open Deck</button> · ' +
         '<button class="reader-train-link" data-act="open-guide">Open Guide</button>';
     }
@@ -1201,14 +1267,14 @@
         state.trainJobs = (res && res.jobs) || {};
         var job = state.trainJobs[id];
         // The reader may have moved on to a different transcript since this
-        // poll started (or closed entirely) — never let a stale poll from
+        // poll started (or closed entirely) - never let a stale poll from
         // job A overwrite the status line for whatever's showing now.
         if (!job) return;
         if (state.reader && trainIdForPath(state.reader.path) === id) {
           $("reader-train-status").innerHTML = trainStatusHtml(job);
         }
         // Toasting on failure happens in the "trainjob" studioEvent handler
-        // only (same convention as the transcribe queue) — polling here is
+        // only (same convention as the transcribe queue) - polling here is
         // just the fallback render path, not a second toast source.
         if (job.status === "done" || job.status === "failed" || job.status === "cancelled") {
           clearInterval(state.trainPollTimer);
@@ -1224,6 +1290,7 @@
       toast("Add a Claude API key in Settings first.", "bad");
       return;
     }
+    if (!window.confirm("Send this transcript to Anthropic to create a deck and self-study guide? This uses your paid API credits.")) return;
     $("reader-train-status").textContent = "queued…";
     call("generate_training", state.reader.path).then(function (res) {
       pollTrainJob(res.id);
@@ -1301,7 +1368,7 @@
         toast("Transcript saved: " + (payload.title || "episode"), "good");
         if (state.tab === "library") refreshLibrary();
       } else if (payload.status === "failed") {
-        toast((payload.title || "Episode") + " — " + (payload.error || "failed"), "bad");
+        toast((payload.title || "Episode") + " \u2014 " + (payload.error || "failed"), "bad");
       }
     } else if (name === "queue") {
       renderRailFoot(); renderStatus();
@@ -1313,7 +1380,7 @@
         $("reader-train-status").innerHTML = trainStatusHtml(payload);
       }
       if (payload.status === "failed") {
-        toast((payload.title || "Training") + " — " + (payload.error || "failed"), "bad");
+        toast((payload.title || "Training") + " \u2014 " + (payload.error || "failed"), "bad");
       }
     }
   };
@@ -1352,13 +1419,18 @@
       call("list_transcripts").catch(function () { return []; }),
       call("get_training_settings").catch(function () { return null; })
     ]).then(function (res) {
-      state.shows = res[0] || [];
+      // A show added while these calls were running is not in res[0].
+      var loaded = res[0] || [];
+      state.shows = loaded.concat(state.shows.filter(function (s) {
+        return !loaded.some(function (l) { return l.id === s.id; });
+      }));
       state.folders = res[1] || [];
       if (res[2]) state.settings = res[2];
       if (res[3]) state.jobs = res[3].jobs || {};
       state.transcripts = res[4] || [];
       if (res[5]) state.trainingSettings = res[5];
       state.ready = true;
+      connectEvents(); // after the snapshot, so it can't overwrite newer events
 
       renderRail(); renderRailFoot(); renderQueue(); renderStatus(); renderSettings(); renderLibrary();
       ensurePolling();

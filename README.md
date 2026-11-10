@@ -1,178 +1,165 @@
 # Sori
 
-Follow podcasts and YouTube channels, turn every new episode into text on
-your own machine, and, if you want, turn a transcript into a training deck
-and study guide.
+**Turn a podcast into a lesson you can use.** Sori helps independent learners
+transcribe podcasts, search their listening library, and create editable
+training decks and self-study guides.
 
-Transcription is free and local: no account, no API key, nothing leaves
-your computer except the feed and audio fetches. Training generation from
-the app is the one paid step: it calls the Claude API with your own key, and
-you can ignore it entirely. From Claude Code or Cowork the session writes
-the deck outline itself and Sori only renders it, so that door needs no key.
-
-![Sori's queue: new, running, failed and stopped episodes, each with Transcribe, Stop or Retry, and a Dismiss control](docs/screenshot.png)
+Built by [OnePromptMan](https://github.com/onepromptman). Open source under the
+MIT license. Local transcription needs no Sori account or API key.
 
 ```mermaid
 flowchart LR
-    A[Podcast RSS feed] --> C{New episode}
-    B[YouTube channel] --> C
-    C -->|video| D[Captions, seconds]
-    C -->|audio| E[Whisper on your CPU, minutes]
-    D --> F[Transcript .txt + timings]
-    E --> F
-    F -->|optional, your Claude key| G[Training deck .pptx + study guide .md]
+    A[Podcast or recording] --> B[Local transcript]
+    B --> C[Searchable library]
+    C --> D[Optional AI training]
+    D --> E[Editable slides]
+    D --> F[Practice and self-check guide]
 ```
 
-## Get it
+![Sori browser reader after transcribing a fictional recording](docs/screenshot.png)
 
-Sori is two products over one engine: the Windows app is first-class, and a
-Claude-native Sori (the plugin plus the Python CLIs, no window) ships
-alongside it, with one parity rule: anything the window can do, the CLI can
-do too, from the same `shows.json`.
+## Start here
 
-| Route | For | Steps |
-|---|---|---|
-| **Windows app** | most people | download `Sori-win64.zip` from the [latest release](https://github.com/onepromptman/sori-app/releases/latest), extract, double-click `Sori.exe` |
-| **Claude Code / Cowork plugin** | "transcribe this for me" in plain language | `/plugin marketplace add onepromptman/sori-app` then `/plugin install sori@sori`, then `/sori:transcribe`, `/sori:shows`, `/sori:sweep`, `/sori:train` (paid) |
-| **From source** | any OS with Python 3.11+ | `pip install -r requirements-app.txt` then `python app.py` |
-| **Command line** | one transcript now, or scripting | `python transcribe.py youtube "<url>" --out ep.txt`; `shows.py` and `settings.py` manage subscriptions and settings, see [docs/CLI.md](docs/CLI.md) |
+This is a **downloadable local browser app for Windows**. It opens in your
+normal browser and processes audio on your PC. It is not a hosted website:
+you install it once, and your computer must stay on while it works.
 
-**CLI-only for now:** nothing. Every window feature has a CLI twin:
-`shows.py` mirrors the source list (add, remove, Auto, Auto-train,
-folders) and `settings.py` mirrors Settings, so the app shows whatever the
-CLI did and vice versa. Scheduling options (Windows task, Cowork, cloud
-routine) are compared in [docs/AUTOMATE.md](docs/AUTOMATE.md).
+**Browser edition: release candidate 3.2.2, prepared locally.** The
+[public release page](https://github.com/onepromptman/sori-app/releases/latest)
+currently offers the earlier desktop edition. Publish the reviewed 3.2.2
+artifacts before advertising the browser edition as available there.
 
-Two things on the first app launch. Extract the zip before running
-(right-click, **Extract All**); an exe run from inside the zip window fails
-with *Failed to load Python DLL* because Windows extracts it alone. And
-the blue *Windows protected your PC* box is SmartScreen, which shows for
-any app without paid code-signing; click **More info, Run anyway** once.
+For the browser edition ZIP:
 
-## Use it
+1. Download **Sori-win64.zip**, right-click it, and choose **Extract All**.
+2. Open the extracted folder and double-click **Sori.exe**. Sori opens a tab
+   in your default browser. The unsigned app may trigger a Windows warning;
+   verify the source and release checksum before choosing to run it.
+3. Paste a podcast RSS feed into the source box. Pick an episode and click
+   **Transcribe**. Read and search the result in **Library**.
 
-- **Add a source.** Paste a podcast RSS feed, a YouTube channel or
-  `@handle`, or a playlist into the box on the left. The **+** menu also
-  adds your own audio files and folders for grouping.
-- **Queue** shows what is new. **Transcribe** one, tick several, or
-  **Stop** a running job. Anything you pick by hand runs next, ahead of
-  what Auto queued (Stop the running one first if you want yours now).
-- **Dismiss** (the × on a row, or **Dismiss all new**) skips an episode
-  for good. It will not come back on the next check or after a restart.
-- **Auto** on a source transcribes its new episodes by itself while the
-  app is open. **Auto-train** also generates a training after each one
-  (needs a key).
-- **Library** holds every transcript with search *inside* the text. The
-  reader has timestamps, find, copy, `.md` and `.srt` export, and
-  **Generate Training**.
-- **Settings**: Whisper model, caption language, transcript folder, deck
-  theme, Claude API key.
+You need Windows 10 or 11, disk space for the app and speech model, and an
+internet connection to fetch episodes and download the model the first time.
+You can also add your own audio from the **+** menu. YouTube captions work
+when the source offers accessible captions in your chosen language; some
+videos need additional download tools or are unavailable.
 
-Two things that keep the queue sane. Follow a show through one door, not
-both; the same show as RSS *and* YouTube gives you every episode twice, and
-Sori warns when you add the second. And on a laptop CPU, `small.en` is
-about five times faster than `large-v3` with nearly the same quality on
-talk shows; three daily shows on Auto with `large-v3` will not drain.
+## From listening to learning
 
-The first audio transcription downloads the Whisper model, about 150 MB,
-once per machine.
+Open a transcript in Library and choose **Generate Training**. With your own
+Claude API key saved in Settings, Sori requests an editable slide deck and a
+study guide with learning objectives, key concepts, a practice exercise,
+retrieval questions, a separate answer key, and suggested review sessions.
 
-## Training generation
+Training generation sends the transcript and episode metadata to Anthropic
+and uses paid API credits. The app asks before a manual request or before
+you enable **Auto-train** for a show. Auto-train authorizes future training
+requests for that show, so turn it off when you no longer want them.
 
-**Generate Training** on any transcript, or Auto-train on a show, sends the
-transcript to Claude and gets back a deck outline plus a study guide,
-grounded in the transcript only: the model is told not to invent numbers,
-dates, or quotes it cannot point to. The deck renders as a real, editable
-`.pptx` — fourteen slide kinds, including stat, chart and scorecard layouts
-that only appear when the episode actually stated the figures.
+![Example training deck using the public studio theme](docs/deck-studio.png)
 
-![Fourteen slides from one podcast episode: a dark cover, agenda, bulleted
-content, a pull quote, a numbered process, a colour-field section break, two
-large-figure stat slides, a two-column comparison, a scorecard, and a closing
-slide](docs/deck-studio.png)
+The screenshots use a fictional lesson. The sample outline was written for
+testing and rendered by Sori, without a live AI call. Its [transcript](examples/learning-demo.txt)
+and [outline](examples/learning-demo.json) are included so you can reproduce it.
 
-Decks ship in the **`studio`** theme: an unbranded editorial look in fonts
-every machine already has, so nothing is installed and a deck you send to a
-colleague opens looking the way you left it. Themes are a swappable file —
-change six colours, or drop in your own renderer. See
-[themes/README.md](themes/README.md).
+The learning format is requested from the model; quality varies. Validation
+checks slide structure, quote wording, and whether selected numeric values
+occur in the transcript. It does not prove that a claim, attribution, unit,
+or interpretation is correct. Check the transcript and answers before
+relying on or sharing the training. Only use and redistribute material you
+have permission to use.
 
-Add your key under **Settings, Training generation** (or `settings.py api-key
-set`). It is stored only in your user folder, never logged, never synced. One
-API call per deck; you pay Anthropic directly at their rates. `/sori:train`
-skips the call: the session writes the outline against the same rules and
-`train.py --outline` renders it with the same engine (see docs/CLI.md).
+## Let the library grow
 
-Everything Sori makes lives in `%USERPROFILE%\Sori\` and survives replacing
-the app: `Transcripts\<Show>\`, `Trainings\<Show>\`, `shows.json`,
-`credentials.json`, `sweep.log`.
+- **Auto** checks a source for new episodes and queues transcription.
+- **Auto-train** adds optional paid training after transcription.
+- **Library** searches transcript text and exports text, Markdown and subtitles.
+- **Settings** controls the model, language, output folder, key and deck theme.
 
-## Every morning, automatically
+Closing the tab leaves Sori running and checking sources hourly. **Settings >
+Stop** shuts it down. Opening Sori again returns to the running copy. The app
+does not automatically start after a reboot. The bundled daily-sweep setup
+is an optional Windows scheduled task; see [automation](docs/AUTOMATE.md).
 
-The simplest route on Windows: double-click **`setup-auto-sweep.bat`** in
-the unzipped folder. It registers a Windows task at 9:03 daily that checks
-every show, transcribes new episodes for Auto shows, and trains the
-Auto-train ones. Nothing appears on screen; each run appends to `sweep.log`.
-Remove it with:
+## Your data and costs
 
-```
-schtasks /delete /tn "Sori Daily Sweep" /f
+Transcription runs locally without an API fee. Feed and model downloads use
+the internet. Training through the app is a separate paid Anthropic call.
+Using Sori in an AI chat client follows that client's subscription, usage
+limits and data policies; it is not a promise of free AI access.
+
+Your library and API key stay in your local Sori folder. The key is stored
+unencrypted under your operating system account. Sori has no analytics or
+cloud sync service, but your own backup software may copy the folder.
+Read [privacy and data flow](PRIVACY.md) before adding private recordings.
+
+## For engineers
+
+### Run from source
+
+Use Python 3.11 or newer and an isolated environment. From the extracted
+source directory on Windows:
+
+```powershell
+uv venv --python 3.11
+uv pip install --python .venv/Scripts/python.exe -r requirements-app.txt
+.venv/Scripts/python.exe app.py
 ```
 
-Running the sweep from Cowork or a cloud routine instead, with the
-trade-offs, is in [docs/AUTOMATE.md](docs/AUTOMATE.md).
+On macOS/Linux use `.venv/bin/python`. Browser file pickers are Windows-only;
+the CLI is the supported alternative for adding local files there. These
+platforms have not received the packaged Windows acceptance checks.
 
-Upgrading from an Earshot or Podcast Studio build? See
-[docs/UPGRADING.md](docs/UPGRADING.md).
+The server binds only `127.0.0.1:17654`. It checks the Host header, request
+origin and a per-launch token. Do not expose it through a public reverse proxy.
+Set `SORI_PORT` for a different port or `SORI_HOME` for an isolated data folder.
+`--window` opens the older desktop window; `--sweep` runs one scheduled pass.
 
-## Make it yours
+### Claude plugin and command line
 
-Settings covers what most people change: model, language, where transcripts
-go, deck theme, key, and the per-show Auto switches. The rest is one
-constant each; edit, then rebuild.
+The prepared `sori.zip` contains the plugin at its root. Cowork upload remains
+unverified. Claude Code can install the public repository's released version:
 
-| Change | Where |
-|---|---|
-| Voice and shape of every training | `SYSTEM_PROMPT` in `training.py`, five house rules; rewrite them and the output changes completely |
-| Which Claude model writes it | `DEFAULT_MODEL` in `training.py` |
-| Deck length and slide types | `SLIDE_KINDS` and the `slides` min/max in `training.py` |
-| Cost ceiling per episode | `MAX_TRANSCRIPT_CHARS` in `training.py` |
-| Deck look | six colours and three font names at the top of `themes/studio.py`, or a whole new backend — see [themes/README.md](themes/README.md) |
-| Daily sweep time | the `/st 09:03` in `setup-auto-sweep.bat` |
-
-Only training generation has a look to change. For transcripts alone,
-`training.py` and `themes/` are never touched.
-
-## When something goes wrong
-
-Run `python app.py --selftest` (or `Sori.exe --selftest`): it checks every
-part the app needs and writes what is missing to `sweep.log`. Two files in your Sori folder
-(`%USERPROFILE%\Sori`, or `SORI_HOME`) tell you what happened:
-`sweep.log` holds the summary of every headless sweep and self-test, and
-`sori.log` holds errors from the app, each line with a run id. Set
-`LOG_LEVEL=INFO` for more detail, or `LOG_FORMAT=json` for one JSON object
-per line. `sori.log` may contain host names, file names, error classes and
-short error messages; it never contains your API key, transcript text, full
-URLs or full folder paths, and it rotates at 2 MB, keeping three old copies.
-Neither file should ever hold your API key or transcript text; if one does,
-that is a security bug (see [SECURITY.md](SECURITY.md)).
-
-## Build the exe
-
-```bash
-pip install -r requirements-app.txt
-python package.py            # PyInstaller + the files that must sit beside the exe + zip
-python package.py --no-build # re-zip an existing dist/Sori
+```
+/plugin marketplace add onepromptman/sori-app
+/plugin install sori@sori
 ```
 
-`package.py` exists because PyInstaller emits only `Sori.exe` and
-`_internal/`; the sidecar files a downloader needs (`setup-auto-sweep.bat`,
-licences, the quick-start text) are copied in afterwards, and it fails
-loudly if one is missing.
+Use `/sori:transcribe`, `/sori:shows`, `/sori:sweep` and `/sori:train`. Skills
+run `preflight.py` to prepare their environment. A chat session can write an
+outline and call `train.py --outline` without a separate Anthropic API call.
+See [CLI documentation](docs/CLI.md) and [acceptance limits](ACCEPTANCE.md).
+
+### Build public downloads
+
+```powershell
+.venv/Scripts/python.exe package.py
+```
+
+The builder stages tracked files into a new folder under `build/`, excludes
+the optional private renderer, and creates **Sori-win64.zip**, **Sori-source.zip**,
+**sori.zip**, a source hash manifest, and **SHA256SUMS.txt** in its `release/`
+folder. Stage intended new files in Git first. Untracked files are not copied.
+Reusing an existing binary with `--no-build` is refused. Review source and
+binary contents before manually publishing a new release.
+
+Run `.venv/Scripts/python.exe -m pytest -q` for automated checks and
+`.venv/Scripts/python.exe app.py --selftest` for installed backends. Tests
+use disposable data and block paid API calls. Live transcription, paid
+generation and signed-binary distribution require separate validation.
+
+### Customize and troubleshoot
+
+The public `studio` theme uses system fonts and needs no private component.
+See [themes](themes/README.md), [upgrading](docs/UPGRADING.md), and
+[maintaining](docs/MAINTAINING.md). Missing fonts may substitute on another PC.
+
+Generated files live under `%USERPROFILE%/Sori` by default. Logs may contain
+source host names, file names and error messages; review them before sharing.
+Do not upload that data folder as part of a source or binary release.
 
 ## License
 
-MIT, see [LICENSE](LICENSE). Bundled fonts (Gowun Batang, IBM Plex) are
-SIL OFL 1.1 and Python dependencies keep their own licences; see
-[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md), which also ships in the
-zip.
+[MIT](LICENSE). Bundled fonts and dependencies retain their own licenses;
+see [third-party notices](THIRD-PARTY-NOTICES.md). Security concerns belong in
+the channel described in [SECURITY.md](SECURITY.md).

@@ -18,9 +18,16 @@ import deck_render
 import train
 import training as tr
 
-HEADER_EMDASH = "Some Episode\nThe Daily — 2026-09-04\nhttps://example.test/ep\n\nbody text\n"
+HEADER_EMDASH = "Some Episode\nThe Daily \u2014 2026-09-04\nhttps://example.test/ep\n\nbody text\n"
 HEADER_HYPHEN = "Some Episode\nThe Daily - 2026-09-04\nhttps://example.test/ep\n\nbody text\n"
 NO_HEADER = "just a transcript with no header at all"
+# What the fictional host says: every figure the GOOD_* slides below show.
+BODY = (
+    "The outage lasted 90 minutes and took 3 regions down. Uptime went from 100% "
+    "to 98.6 percent, and only 5 customers noticed. Forty-seven people were paged, "
+    "and it cost $1,200,000. “We don’t ship on Fridays, and now you know why,” "
+    "she said. Then we rolled it back.\n"
+)
 
 
 # ---- header parsing --------------------------------------------------------
@@ -46,7 +53,7 @@ def test_header_meta_two_lines_without_show_date_keeps_title_only():
 @pytest.fixture
 def transcript(tmp_path) -> Path:
     p = tmp_path / "2026-09-04 - Some Episode.txt"
-    p.write_text(HEADER_EMDASH, encoding="utf-8")
+    p.write_text(HEADER_EMDASH + BODY, encoding="utf-8")
     return p
 
 
@@ -234,6 +241,29 @@ def test_brief_prints_rules_and_schema(capsys):
     assert '"study_guide_markdown"' in out and '"slides"' in out
 
 
+def test_rejected_quote_does_not_echo_source_material():
+    outline = _outline_with({"kind": "quote", "quote": "Synthetic confidential sentence"})
+    with pytest.raises(tr.TrainingGenerationError) as caught:
+        tr.result_from_outline(outline, {}, "A different source.")
+    assert "Synthetic confidential sentence" not in str(caught.value)
+
+
+def test_provider_error_body_is_not_exposed(monkeypatch):
+    import types
+
+    fake = sys.modules["anthropic"]
+
+    def fail(**kwargs):
+        raise fake.APIError("Synthetic private response body")
+
+    monkeypatch.setattr(
+        fake, "Anthropic", lambda **kwargs: types.SimpleNamespace(messages=types.SimpleNamespace(create=fail))
+    )
+    with pytest.raises(tr.TrainingGenerationError) as caught:
+        tr.generate_training("Synthetic transcript", {}, "test-key")
+    assert "Synthetic private response body" not in str(caught.value)
+
+
 def test_outline_renders_without_any_key(transcript, tmp_path, stub_render, monkeypatch, capsys):
     monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
     # generate_training is left live on purpose: this route must never reach it.
@@ -259,6 +289,16 @@ def test_outline_rejects_bad_shapes(transcript, tmp_path, stub_render, capsys):
         assert train.main([str(transcript), "--outline", str(outline)]) == 1
         assert capsys.readouterr().err.startswith("!! ")
     assert stub_render == []
+
+
+def test_outline_errors_do_not_blame_a_claude_call(transcript, tmp_path, stub_render, capsys):
+    """Regression: the free route makes no API call, yet a missing study guide
+    was reported as something Claude returned."""
+    for bad in ({**OUTLINE, "study_guide_markdown": ""}, {**OUTLINE, "slides": []}):
+        outline = tmp_path / "o.json"
+        outline.write_text(json.dumps(bad), encoding="utf-8")
+        assert train.main([str(transcript), "--outline", str(outline)]) == 1
+        assert "Claude" not in capsys.readouterr().err
 
 
 def test_outline_unreadable_is_usage_error(transcript, tmp_path, capsys):
@@ -384,3 +424,72 @@ def test_bridge_coerces_visual_payloads():
 
     spec = deck_render._slide_spec({**GOOD_SCORECARD, "rows": [{"label": "r", "level": 99}]}, "light")
     assert spec["rows"][0]["level"] == 3  # clamped into the trigram range
+
+
+# ---- grounding: quotes and figures must be in the transcript -----------------
+
+
+@pytest.mark.parametrize(
+    "slide",
+    [
+        {"kind": "quote", "quote": "We don't ship on Fridays, and now you know why."},
+        {"kind": "quote", "quote": "“We don’t ship on Fridays ... Then we rolled it back.”"},
+        {"kind": "data", "hero_stat": {"num": "47", "label": "paged"}, "stats": [{"num": "3"}]},
+        {"kind": "data", "hero_stat": {"num": "$1,200,000"}},
+        {"kind": "content_stat", "heading": "H", "hero_stat": {"num": "98.6%"}},
+    ],
+    ids=["quote", "quote-with-ellipsis", "spelled-number", "thousands-commas", "content-stat"],
+)
+def test_grounded_quotes_and_figures_are_accepted(transcript, tmp_path, stub_render, slide):
+    assert _run_outline(tmp_path, transcript, _outline_with(slide)) == 0
+    assert stub_render
+
+
+@pytest.mark.parametrize(
+    "slide, needle",
+    [
+        (
+            {"kind": "quote", "quote": "We never ship on Fridays, and now you know why."},
+            "not in the transcript",
+        ),
+        ({"kind": "data", "hero_stat": {"num": "47%"}, "stats": [{"num": "62"}]}, "supporting stat"),
+        ({"kind": "content_stat", "heading": "H", "hero_stat": {"num": "12x"}}, "hero_stat"),
+        ({"kind": "data", "hero_stat": {"num": "Two thirds"}}, "does not state"),
+        (
+            {
+                "kind": "chart",
+                "data": [
+                    {"label": "a", "value": 100},
+                    {"label": "b", "value": 98.6},
+                    {"label": "c", "value": 71},
+                ],
+            },
+            "chart point 3",
+        ),
+    ],
+    ids=[
+        "altered-quote",
+        "invented-supporting-stat",
+        "invented-hero",
+        "invented-words",
+        "invented-chart-point",
+    ],
+)
+def test_ungrounded_quotes_and_figures_are_rejected(transcript, tmp_path, stub_render, capsys, slide, needle):
+    """The kit 11 failure: an altered quote and an invented figure made a deck."""
+    out = tmp_path / "out"
+    out.mkdir()
+    prior = out / "2026-09-04 - Some Episode.pptx"
+    prior.write_bytes(b"earlier good deck")
+    assert _run_outline(tmp_path, transcript, _outline_with(slide)) == 1
+    err = capsys.readouterr().err
+    assert err.startswith("!! ") and needle in err
+    assert stub_render == [] and prior.read_bytes() == b"earlier good deck"
+
+
+def test_api_route_checks_grounding_against_the_whole_transcript():
+    """generate_training hands the transcript on, so the paid route is held to it too."""
+    bad = _outline_with({"kind": "data", "hero_stat": {"num": "47%"}})
+    with pytest.raises(tr.TrainingGenerationError, match="does not state"):
+        tr.result_from_outline(bad, {"title": "T"}, "nobody mentions a number here")
+    assert tr.result_from_outline(bad, {"title": "T"}).outline["slides"]

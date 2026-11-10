@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-shows.py — subscriptions and folders from a shell, no window needed.
+shows.py \u2014 subscriptions and folders from a shell, no window needed.
 
 The same add / remove / auto / folder actions the Sori window offers, exposed
 as a command so they can be driven from a script or a Claude Code / Cowork
@@ -215,7 +215,7 @@ def cmd_check(api: app.Api, args) -> int:
             print(f"  !! {err['show']}: {err['error']}", file=sys.stderr)
 
     _emit(res, args.json, human)
-    return 0
+    return 1 if res["errors"] else 0
 
 
 # -- argparse ---------------------------------------------------------------

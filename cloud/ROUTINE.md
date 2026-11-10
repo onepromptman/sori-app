@@ -17,9 +17,9 @@ copy-paste once the owner says yes.
 
 ## What the owner must confirm first
 
-1. **Decision 2 (destination).** Outputs go to a private GitHub repo
-   `<owner>/sori-output`, one commit per run (recommended in the v3.2
-   handoff; the alternative was Google Drive via connector). Creating that
+1. **Destination.** Outputs go to a private GitHub repo
+   `<owner>/sori-output`, one commit per run (the recommended design;
+   the alternative was Google Drive via connector). Creating that
    repo is itself ask-first.
 2. **Spend.** The dry run below has training disabled and costs nothing
    beyond the routine's own runtime. The first run with `ANTHROPIC_API_KEY`
@@ -32,7 +32,7 @@ copy-paste once the owner says yes.
 
 - `<owner>/sori-output` exists, private, with the layout in
   `cloud/README.md`: a `.gitignore` holding `state/credentials.json`,
-  `state/*.json.tmp`, `state/*.json.bad`, and a `state/shows.json` that
+  `state/*.json.tmp`, `state/*.json.bad*`, and a `state/shows.json` that
   lists only YouTube shows. Build that file from a Sori checkout:
 
   ```bash

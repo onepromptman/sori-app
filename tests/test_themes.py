@@ -116,6 +116,20 @@ def test_two_column_carries_its_heading():
     assert spec["heading"] == "H" and spec["lede"] == "l"
 
 
+def test_data_slide_shows_its_heading(tmp_path):
+    """Regression: a `data` slide dropped its heading on the way to the theme."""
+    from pptx import Presentation
+
+    raw = {"kind": "data", "heading": "Paging load", "hero_stat": {"num": "47", "label": "people paged"}}
+    assert deck_render._slide_spec(raw, "studio")["heading"] == "Paging load"
+    out = tmp_path / "d.pptx"
+    deck_render.render_pptx({"title": "T", "slides": [raw]}, "studio", out)
+    words = [
+        sh.text_frame.text for sl in Presentation(str(out)).slides for sh in sl.shapes if sh.has_text_frame
+    ]
+    assert "Paging load" in words
+
+
 @pytest.mark.parametrize(
     "text, width, pt, expected_min",
     [
@@ -132,7 +146,7 @@ def test_studio_names_only_stock_faces(tmp_path):
     """OOXML has no fallback chain and python-pptx cannot embed a face, so a
     name the opening machine lacks becomes PowerPoint's default, not our
     second choice. studio may therefore only name fonts that are already on a
-    stock install -- no font installation, on any platform."""
+    stock Windows install -- no font installation by this backend."""
     assert studio.FONT_DISPLAY == "Georgia", "Georgia ships on Windows and macOS"
     for name in (studio.FONT_BODY, studio.FONT_MONO, studio.FONT_NUMERAL):
         assert name in {"Segoe UI", "Consolas"}, f"{name} is not a stock face"

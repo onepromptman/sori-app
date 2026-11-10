@@ -2,12 +2,16 @@ Sori - podcast & YouTube transcripts, free and local
 ====================================================
 
 START HERE
-  Double-click  Sori.exe  (in this folder).
+  Double-click  Sori.exe  (in this folder). It opens in your web
+  browser and only runs on your own PC.
 
-  Windows shows a blue "Windows protected your PC" box the first
-  time. That is SmartScreen, which appears for any app that hasn't
-  been through a paid code-signing process - it is not a virus
-  warning. Click "More info", then "Run anyway". Windows remembers.
+  Closing the browser tab leaves Sori running so it can keep
+  checking your shows. To shut it down, open Settings and click
+  Stop. Double-clicking Sori.exe again reopens it.
+
+  This app is unsigned. Windows may show a security warning.
+  Verify the download source and published SHA256 checksum before
+  deciding whether to run it.
 
 IMPORTANT
   Keep this whole folder together. Sori.exe needs the "_internal"
@@ -32,7 +36,7 @@ OPTIONAL: daily automatic transcripts
 
 OPTIONAL: turn a transcript into a training deck
   This is the one feature that is NOT free - it calls the Claude API
-  with your own key and costs money per run. Add a key under
+  with your own key and sends the transcript to Anthropic. API charges apply. Add a key under
   Settings -> Training generation. Leave it blank and everything
   else works exactly the same.
 
@@ -44,3 +48,5 @@ YOUR FILES
 Full docs + how to customize it:
   https://github.com/onepromptman/sori-app
 MIT licensed.
+
+Read PRIVACY.md for storage, sharing, and automatic training details.

@@ -50,6 +50,50 @@ def build(dest: Path) -> Path:
     return out
 
 
+def capture(edge: Path, url: str, out: Path, size: str) -> bool:
+    """Replace out only after a fresh Edge capture succeeds and is a PNG."""
+    try:
+        with tempfile.TemporaryDirectory(prefix=".sori-capture-", dir=out.parent) as tmp:
+            root = Path(tmp)
+            shot = root / "capture.png"
+            result = subprocess.run(
+                [
+                    str(edge),
+                    "--headless=new",
+                    "--disable-gpu",
+                    "--hide-scrollbars",
+                    f"--user-data-dir={root / 'profile'}",
+                    f"--window-size={size}",
+                    "--virtual-time-budget=6000",
+                    f"--screenshot={shot}",
+                    url,
+                ],
+                check=False,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                timeout=60,
+            )
+            if result.returncode or not shot.is_file():
+                return False
+            with shot.open("rb") as f:
+                header = f.read(24)
+                if (
+                    len(header) != 24
+                    or header[:8] != b"\x89PNG\r\n\x1a\n"
+                    or header[8:16] != b"\x00\x00\x00\rIHDR"
+                    or int.from_bytes(header[16:20], "big") == 0
+                    or int.from_bytes(header[20:24], "big") == 0
+                ):
+                    return False
+                f.seek(-12, 2)
+                if f.read() != b"\x00\x00\x00\x00IEND\xaeB`\x82":
+                    return False
+            shot.replace(out)
+            return True
+    except (OSError, subprocess.TimeoutExpired):
+        return False
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--port", type=int, default=8766)
@@ -70,24 +114,10 @@ def main() -> int:
         if not edge:
             sys.exit("Edge not found; open the URL in a browser instead")
         out = Path(args.shot).resolve()
-        subprocess.run(
-            [
-                str(edge),
-                "--headless=new",
-                "--disable-gpu",
-                "--hide-scrollbars",
-                f"--window-size={args.size}",
-                "--virtual-time-budget=6000",
-                f"--screenshot={out}",
-                url,
-            ],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        print("wrote", out if out.exists() else "(nothing: Edge failed)")
+        ok = capture(edge, url, out, args.size)
+        print("wrote", out if ok else "(nothing: Edge failed)")
         srv.shutdown()
-        return 0 if out.exists() else 1
+        return 0 if ok else 1
 
     print("Ctrl+C to stop")
     try:

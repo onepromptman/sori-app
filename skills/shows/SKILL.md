@@ -25,23 +25,29 @@ the same `shows.json` under `%USERPROFILE%\Sori` (`SORI_HOME` overrides),
 so the exe shows what the CLI did. Neither opens a window or starts a
 worker.
 
-## Setup (once)
+## Get ready (every time, before the first command)
 
 ```bash
-cd "$SORI" && python -m pip install -r requirements-app.txt
+python "$SORI/preflight.py" shows
 ```
+
+This checks Python (3.11 or newer), sets up Sori's own environment the first
+time, and prints `SORI_PY=<path>` on its last line. `PY` below is that path:
+run every Sori script with it. Tell the user anything it prints after `note:`
+before you go on. If it ends with a line starting `!!`, repeat that line to
+the user and stop. Never install packages by hand.
 
 ## shows.py
 
 | Want | Command |
 |---|---|
-| List shows (id, name, type, auto, auto-train, folder, last checked) | `python "$SORI/shows.py" list [--json]` |
-| Subscribe | `python "$SORI/shows.py" add <url> [--auto] [--auto-train] [--folder <folder>] [--json]` |
-| Unsubscribe | `python "$SORI/shows.py" remove <show>` |
-| Auto-transcribe new episodes | `python "$SORI/shows.py" auto <show> on\|off` |
-| Auto-train after each transcript (paid, needs a key) | `python "$SORI/shows.py" auto-train <show> on\|off` |
-| Folders | `python "$SORI/shows.py" folder list \| add <name> \| rename <folder> <name> \| remove <folder> \| set <show> <folder>` |
-| What is new, without transcribing (network) | `python "$SORI/shows.py" check [--json]` |
+| List shows (id, name, type, auto, auto-train, folder, last checked) | `"$PY" "$SORI/shows.py" list [--json]` |
+| Subscribe | `"$PY" "$SORI/shows.py" add <url> [--auto] [--auto-train] [--folder <folder>] [--json]` |
+| Unsubscribe | `"$PY" "$SORI/shows.py" remove <show>` |
+| Auto-transcribe new episodes | `"$PY" "$SORI/shows.py" auto <show> on\|off` |
+| Auto-train after each transcript (paid, needs a key) | `"$PY" "$SORI/shows.py" auto-train <show> on\|off` |
+| Folders | `"$PY" "$SORI/shows.py" folder list \| add <name> \| rename <folder> <name> \| remove <folder> \| set <show> <folder>` |
+| What is new, without transcribing (network) | `"$PY" "$SORI/shows.py" check [--json]` |
 
 `<show>` and `<folder>` take an id or an exact name, case-insensitive; an
 ambiguous name is an error, so use the id from `list`. `add` fetches the
@@ -54,12 +60,12 @@ and suggest keeping one door. A fresh subscription offers exactly one
 
 | Want | Command |
 |---|---|
-| Show everything (key shows as set, last 4, or not set) | `python "$SORI/settings.py" show [--json]` |
-| Whisper model | `python "$SORI/settings.py" model <tiny.en\|base.en\|small.en\|large-v3>` |
-| Caption language | `python "$SORI/settings.py" lang <auto\|en\|ko>` |
-| Deck theme | `python "$SORI/settings.py" deck-theme <baek\|dark\|dancheong>` |
-| Transcript folder | `python "$SORI/settings.py" transcripts-dir <path>` or `transcripts-dir --default` |
-| Claude API key | `python "$SORI/settings.py" api-key set` / `api-key status` / `api-key clear` |
+| Show everything (key shows as set, last 4, or not set) | `"$PY" "$SORI/settings.py" show [--json]` |
+| Whisper model | `"$PY" "$SORI/settings.py" model <tiny.en\|base.en\|small.en\|large-v3>` |
+| Caption language | `"$PY" "$SORI/settings.py" lang <auto\|en\|ko>` |
+| Deck theme | `"$PY" "$SORI/settings.py" deck-theme <theme>`; use `--help` to see available themes |
+| Transcript folder | `"$PY" "$SORI/settings.py" transcripts-dir <path>` or `transcripts-dir --default` |
+| Claude API key | `"$PY" "$SORI/settings.py" api-key set` / `api-key status` / `api-key clear` |
 
 `api-key set` reads the key from the `ANTHROPIC_API_KEY` environment
 variable only, never from an argument, and saves it to `credentials.json`
@@ -68,9 +74,8 @@ the shell Claude runs in, then run `api-key set`; it prints `saved (...last4)`.
 Do not ask the user to paste the key into chat, do not echo it, and never
 print more than its last 4 characters.
 
-On a laptop CPU `small.en` is about five times faster than `large-v3` with
-nearly the same quality on talk shows; suggest it when several shows are on
-Auto.
+`small.en` is an English-only option; actual speed and accuracy depend on the
+machine and recording. Use a multilingual model for non-English speech.
 
 ## Exit codes
 

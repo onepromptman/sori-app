@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-settings.py — Sori's Settings pane from a shell, no window needed.
+settings.py \u2014 Sori's Settings pane from a shell, no window needed.
 
 The same knobs the window's Settings tab exposes, as a command so a script or
 a Claude Code / Cowork skill can set them. Every verb goes through app.Api
@@ -203,6 +203,16 @@ def _tolerant_streams() -> None:
 def main(argv: list[str] | None = None) -> int:
     _tolerant_streams()
     sori_log.setup()
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # argparse echoes invalid choices and extra values. A user may have pasted
+    # a key here, so reject malformed api-key invocations without echoing them.
+    if (
+        argv
+        and argv[0] == "api-key"
+        and (len(argv) != 2 or argv[1] not in ("set", "clear", "status", "-h", "--help"))
+    ):
+        print("usage: settings.py api-key {set,clear,status}", file=sys.stderr)
+        return 2
     try:
         args = build_parser().parse_args(argv)
     except SystemExit as exc:  # argparse: 2 on usage error, 0 on --help

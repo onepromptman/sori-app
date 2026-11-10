@@ -244,7 +244,7 @@ def test_store_parity_with_api(shows, app_mod, fake_feed, capsys):
     assert [s["id"] for s in api.list_shows()["data"]] == [cli["id"]]
 
 
-# -- handoff 1.2 DoD: subscribe from the CLI, then the sweep picks it up ---------
+# -- a show subscribed from the CLI is picked up by the next sweep --------------
 
 
 def test_cli_added_show_is_swept(shows, app_mod, fake_feed, fake_transcriber, capsys):
@@ -263,3 +263,48 @@ def test_new_ids_never_collide_within_a_millisecond(app_mod):
     for _ in range(50):
         taken.add(app_mod._new_id("s", taken))
     assert len(taken) == 50
+
+
+@pytest.mark.parametrize(
+    "payload",
+    [
+        [],
+        {"shows": [None]},
+        {"shows": [{}]},
+        {"settings": []},
+        {"folders": [{"id": []}]},
+        {"shows": [{"id": "fictional", "folder": []}]},
+        {"shows": [{"id": "fictional", "seen": [None, []]}]},
+    ],
+)
+def test_invalid_store_shape_is_preserved_and_recovered(app_mod, sori_home, payload):
+    path = sori_home / "shows.json"
+    old_backup = sori_home / "shows.json.bad"
+    old_backup.write_text("older backup", encoding="utf-8")
+    path.write_text(json.dumps(payload), encoding="utf-8")
+    store = app_mod.load_store()
+    assert store["shows"] == []
+    assert old_backup.read_text(encoding="utf-8") == "older backup"
+    assert json.loads((sori_home / "shows.json.bad.1").read_text(encoding="utf-8")) == payload
+
+
+def test_check_reports_feed_errors_with_nonzero_exit(shows, app_mod, monkeypatch, capsys):
+    monkeypatch.setattr(
+        app_mod,
+        "check_all",
+        lambda: {"show_count": 1, "episodes": [], "errors": [{"show": "Fictional", "error": "offline"}]},
+    )
+    code, _, err = _run(shows, capsys, ["check"])
+    assert code == 1 and "offline" in err
+
+
+def test_headless_sweep_reports_feed_error_with_nonzero_exit(app_mod, monkeypatch):
+    monkeypatch.setattr(
+        app_mod, "load_store", lambda: {"shows": [{"id": "s", "auto": False}], "settings": {}}
+    )
+    monkeypatch.setattr(
+        app_mod,
+        "check_all",
+        lambda: {"show_count": 1, "episodes": [], "errors": [{"show": "Fictional", "error": "offline"}]},
+    )
+    assert app_mod.sweep() == 1

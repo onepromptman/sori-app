@@ -10,6 +10,11 @@ are in [CLI.md](CLI.md).
 - **Browser first.** `start_sori.py` prepares the browser dependency set and
   starts the local server. `start-sori.bat` is the Windows convenience launcher.
   The default `package.py` build produces Sori-browser.zip without PyInstaller.
+- **Make the user entry point obvious.** The browser ZIP has START SORI.bat,
+  START SORI.command and START HERE.txt beside an app/ folder. The launchers
+  delegate to that folder, including when the extraction path contains spaces.
+  Source and plugin ZIPs keep their original developer layout. The browser
+  manifest covers the assembled layout; the source manifest covers source files.
 - **The EXE is optional.** `package.py --windows-exe` also builds the bundled
   Windows launcher with PyInstaller and adds its required sidecar files.
 - **Never re-zip an installed copy.** Public builds exclude untracked files and

@@ -1,35 +1,36 @@
-Sori - your local browser app
-=============================
+START HERE - SORI
+=================
 
-PRIMARY DOWNLOAD: Sori-browser.zip
-Extract the whole folder. Install Python 3.11 or newer from python.org
-if needed, including the Python launcher on Windows.
+1. EXTRACT THE WHOLE ZIP
+   On Windows: right-click Sori-browser.zip, then Extract All.
+   Open the extracted Sori folder. Do not launch from inside the ZIP.
 
-On Windows, double-click start-sori.bat. First launch installs Sori's
-browser dependencies in its own environment, then opens your browser.
-Keep the launcher running while you use Sori. Later launches reuse setup.
-On macOS/Linux, run python3 start_sori.py from this folder.
+2. DOUBLE-CLICK "START SORI.bat"
+   This is the main Windows start button. If extensions are hidden,
+   it may appear as "START SORI" with type "Windows Batch File".
+   Python 3.11 or newer is required. Get it from python.org if needed.
 
-Paste a podcast RSS feed, choose an episode and click Transcribe.
-Your transcript appears in Library. The first audio job downloads a
-speech model. Transcription is local and needs no API key.
+3. LEAVE THE SETUP WINDOW OPEN
+   First launch downloads components and may take a few minutes.
+   Sori then opens in your normal browser. Later launches reuse setup.
 
-Closing the browser tab leaves Sori running. Settings > Stop stops it.
-Open your launcher again whenever you want to restart.
+Paste a podcast RSS feed, pick an episode and click Transcribe.
+Open Library to read the transcript. The first audio job downloads
+a speech model. No Sori account or API key is needed for transcription.
 
-OPTIONAL WINDOWS PACKAGE: Sori-win64.zip
-This bundles Python. If your download contains Sori.exe, opening it
-starts the same browser app without a separate Python installation.
-Keep its _internal folder beside it. The executable is unsigned;
-verify the source and release checksum before choosing to run it.
+FINISHED? Use Settings > Stop. Closing just the tab leaves Sori running.
+START AGAIN? Double-click START SORI.bat again.
 
-OPTIONAL TRAINING
-Generate Training sends your transcript to Anthropic using your own
-API key and paid credits. Auto-train can repeat that for new episodes.
-Read PRIVACY.md before using private material. Review generated answers.
+Keep the app folder beside the launcher. It contains the program files;
+you do not need to open it. Your recordings and library are stored separately.
 
-Your local library is separate from the downloaded app, normally in
-your user folder under Sori. Do not upload that data folder publicly.
+macOS/Linux: run sh "START SORI.command" from this folder. Those platforms
+and their local file pickers have not received Windows acceptance checks.
 
-Documentation: https://github.com/onepromptman/sori-app
-MIT licensed. macOS/Linux packaging and file pickers are not verified.
+OPTIONAL TRAINING sends transcripts to Anthropic and uses your paid API
+credits. Read PRIVACY.md. Review generated material against its source.
+
+OPTIONAL WINDOWS EXE: if you downloaded Sori-win64.zip instead, open
+Sori.exe. It bundles Python and starts the same browser app.
+
+Help and source: https://github.com/onepromptman/sori-app

@@ -42,7 +42,27 @@ def zip_tree(source: Path, output: Path, prefix: str) -> None:
     with zipfile.ZipFile(output, "w", zipfile.ZIP_DEFLATED) as archive:
         for path in sorted(source.rglob("*")):
             if path.is_file():
-                archive.write(path, str(PurePosixPath(prefix) / path.relative_to(source).as_posix()))
+                name = str(PurePosixPath(prefix) / path.relative_to(source).as_posix())
+                info = zipfile.ZipInfo.from_file(path, name)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                if path.suffix == ".command":
+                    info.create_system = 3
+                    info.external_attr = 0o100755 << 16
+                archive.writestr(info, path.read_bytes())
+
+
+def browser_tree(source: Path, target: Path) -> None:
+    """Keep implementation files behind one app folder in the user download."""
+    shutil.copytree(source, target / "app")
+    entrypoints = {
+        "distribution/windows-start.bat": "START SORI.bat",
+        "distribution/unix-start.command": "START SORI.command",
+        "READ ME FIRST.txt": "START HERE.txt",
+        "LICENSE": "LICENSE.txt",
+        "PRIVACY.md": "PRIVACY.md",
+    }
+    for name, dest in entrypoints.items():
+        shutil.copyfile(source / name, target / dest)
 
 
 def build(root: Path, windows_exe: bool = False) -> Path:
@@ -56,7 +76,9 @@ def build(root: Path, windows_exe: bool = False) -> Path:
     manifest = {name: hashlib.sha256((source / name).read_bytes()).hexdigest() for name in paths}
     output = stage / "release"
     output.mkdir()
-    zip_tree(source, output / "Sori-browser.zip", "Sori")
+    browser = stage / "browser"
+    browser_tree(source, browser)
+    zip_tree(browser, output / "Sori-browser.zip", "Sori")
     zip_tree(source, output / "Sori-source.zip", "Sori")
     # The plugin ZIP has its manifest at the root and includes the same source.
     zip_tree(source, output / "sori.zip", "")
@@ -73,6 +95,14 @@ def build(root: Path, windows_exe: bool = False) -> Path:
             raise ValueError("The Windows executable is missing.")
         zip_tree(dist, output / "Sori-win64.zip", "Sori")
     (output / "source-manifest.json").write_text(json.dumps(manifest, indent=2) + "\n", encoding="utf-8")
+    browser_manifest = {
+        path.relative_to(browser).as_posix(): hashlib.sha256(path.read_bytes()).hexdigest()
+        for path in sorted(browser.rglob("*"))
+        if path.is_file()
+    }
+    (output / "browser-manifest.json").write_text(
+        json.dumps(browser_manifest, indent=2) + "\n", encoding="utf-8"
+    )
     sums = "".join(
         f"{hashlib.sha256(p.read_bytes()).hexdigest()}  {p.name}\n"
         for p in sorted(output.iterdir())

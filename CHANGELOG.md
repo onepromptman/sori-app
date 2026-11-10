@@ -2,6 +2,11 @@
 
 ## 3.2.2 (release candidate)
 
+- Put START SORI.bat and START HERE.txt at the top of the browser download;
+  keep code and developer scaffolding inside app/. Preserve the full source
+  layout in the separate source and plugin ZIPs.
+- Explain first-time setup in the launcher and preserve failures for review.
+
 - Make the local browser app the primary download. The source launcher prepares
   browser-only dependencies; the Windows EXE remains an optional convenience.
 - Default packaging creates Sori-browser.zip without PyInstaller. Use

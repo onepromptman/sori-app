@@ -106,3 +106,13 @@ Windows bundle is requested with --windows-exe.
 The browser-first regression suite passes 240 tests with one optional
 private-font test skipped. macOS/Linux launchers are provided but have not
 received interactive platform acceptance checks.
+
+## Obvious-start distribution
+
+PASS: the extracted browser ZIP places START SORI.bat and START HERE.txt at
+the top level, with source files inside app/. The actual Windows batch entry
+point passed selftest, argument forwarding, local server/API startup and clean
+shutdown from a directory whose name contains spaces. State was isolated and
+the browser environment had neither pywebview nor PyInstaller installed.
+The source ZIP retains the original source layout. Checksums and separate
+browser/source manifests cover the exact release files.

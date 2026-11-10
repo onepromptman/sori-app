@@ -11,8 +11,18 @@ import preflight
 
 def test_browser_package_needs_no_executable_builder(tmp_path, monkeypatch):
     subprocess.run(["git", "init", "-q", str(tmp_path)], check=True)
-    (tmp_path / "start_sori.py").write_text("pass\n")
-    subprocess.run(["git", "add", "start_sori.py"], cwd=tmp_path, check=True)
+    (tmp_path / "start_sori.py").write_text("pass\n", newline="\n")
+    for name in [
+        "distribution/windows-start.bat",
+        "distribution/unix-start.command",
+        "READ ME FIRST.txt",
+        "LICENSE",
+        "PRIVACY.md",
+    ]:
+        path = tmp_path / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("test fixture\n")
+    subprocess.run(["git", "add", "."], cwd=tmp_path, check=True)
 
     original_run = subprocess.run
 
@@ -24,7 +34,17 @@ def test_browser_package_needs_no_executable_builder(tmp_path, monkeypatch):
     monkeypatch.setattr(subprocess, "run", refuse)
     out = public_release.build(tmp_path)
     with zipfile.ZipFile(out / "Sori-browser.zip") as archive:
-        assert archive.namelist() == ["Sori/start_sori.py"]
+        assert archive.read("Sori/app/start_sori.py") == b"pass\n"
+        assert {n for n in archive.namelist() if n.count("/") == 1} == {
+            "Sori/START SORI.bat",
+            "Sori/START SORI.command",
+            "Sori/START HERE.txt",
+            "Sori/LICENSE.txt",
+            "Sori/PRIVACY.md",
+        }
+        assert archive.getinfo("Sori/START SORI.command").external_attr >> 16 & 0o111
+    with zipfile.ZipFile(out / "Sori-source.zip") as archive:
+        assert "Sori/start_sori.py" in archive.namelist()
     assert not (out / "Sori-win64.zip").exists()
     assert "start_sori.py" in json.loads((out / "source-manifest.json").read_text())
 

@@ -13,6 +13,9 @@ def main(argv=None):
     if any(arg not in {"--no-browser", "--selftest"} for arg in args):
         print("Supported options: --no-browser, --selftest", file=sys.stderr)
         return 2
+    print("\nSORI | Your local browser app", flush=True)
+    print("1 of 2: Checking setup. First-time downloads can take a few minutes.", flush=True)
+    print("Keep this window open. Later starts reuse the installed components.\n", flush=True)
     try:
         python = preflight.ensure("browser")
     except preflight.NotReady as exc:
@@ -21,7 +24,12 @@ def main(argv=None):
     if "--selftest" not in args:
         for notice in preflight.notices("browser", "base.en"):
             preflight.say(notice)
-        preflight.say("opening the local browser app; use Settings > Stop when finished")
+        preflight.say(
+            "2 of 2: Starting the local app."
+            + ("" if "--no-browser" in args else " Your browser will open automatically.")
+        )
+        preflight.say("If no tab opens, visit http://127.0.0.1:17654 (unless you changed SORI_PORT).")
+        preflight.say("Keep this window open while using Sori. Use Settings > Stop when finished.")
     try:
         return subprocess.call([str(python), str(Path(__file__).with_name("app.py")), *args])
     except KeyboardInterrupt:

@@ -24,18 +24,34 @@ Sori is a **local browser app**. Download it, start its local engine, and use
 it in your normal browser. Audio processing and your library stay on your
 computer. The Windows EXE is an optional launcher, not the primary product.
 
-**Browser edition: release candidate 3.2.2, prepared locally.** The
-[public release page](https://github.com/onepromptman/sori-app/releases/latest)
-still offers the earlier desktop edition. The browser download described
-below must be published before it is advertised as available there.
+**Browser edition: 3.2.2 release candidate.** Check the
+[release page](https://github.com/onepromptman/sori-app/releases/latest) for
+the matching **Sori-browser.zip**. If it is not listed yet, use the source
+launcher described below while the browser release awaits publication.
 
 1. Download **Sori-browser.zip** and extract the whole folder.
 2. Install [Python 3.11 or newer](https://www.python.org/downloads/) if you
    do not already have it. On Windows, include the Python launcher.
-3. On Windows, double-click **start-sori.bat**. The first launch prepares
+3. On Windows, double-click **START SORI.bat** in the extracted Sori folder. The first launch prepares
    Sori's own dependencies, then opens your browser. Keep the launcher running.
 4. Paste a podcast RSS feed, pick an episode and click **Transcribe**.
    Read and search the result in **Library**.
+
+The extracted download has an obvious starting point:
+
+```text
+Sori/
+  START SORI.bat       <- Windows: double-click this
+  START SORI.command   <- macOS/Linux launcher
+  START HERE.txt       <- short instructions
+  PRIVACY.md
+  LICENSE.txt
+  app/                <- program files; keep this folder beside the launcher
+```
+
+If Windows hides file extensions, look for **START SORI** with type **Windows
+Batch File**. Extract the whole ZIP before starting. Keep the `app` folder
+beside the launcher. It contains the implementation; you do not need to open it.
 
 Later launches reuse the installed dependencies. The first audio transcription
 downloads a speech model. You need disk space and internet access for these
@@ -115,7 +131,8 @@ own environment and starts the local server:
 python start_sori.py
 ```
 
-On macOS/Linux use `python3 start_sori.py` or `sh start-sori.command`.
+In the source checkout, use `python3 start_sori.py` on macOS/Linux.
+In the browser ZIP, use `sh "START SORI.command"` from the extracted Sori folder.
 For a manually managed environment on Windows:
 
 ```powershell
@@ -155,7 +172,7 @@ See [CLI documentation](docs/CLI.md) and [acceptance limits](ACCEPTANCE.md).
 
 The default build needs only Python and Git. It stages tracked files into a
 new folder under `build/` and creates **Sori-browser.zip**, **Sori-source.zip**,
-**sori.zip**, a source hash manifest, and **SHA256SUMS.txt** in its `release/`
+**sori.zip**, source and browser-layout hash manifests, and **SHA256SUMS.txt** in its `release/`
 folder. The browser ZIP is the primary download. To also build the optional
 Windows executable, install `requirements-app.txt` and run
 `python package.py --windows-exe`. That build excludes the private renderer. Stage intended new files in Git first. Untracked files are not copied.

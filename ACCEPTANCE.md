@@ -127,7 +127,7 @@ library, API key, recording or application state is bundled.
 
 ## Integrated 3.4 browser and pipeline checks, 2026-11-10
 
-PASS: 292 automated tests, one optional private-font test skipped. A fresh
+PASS: 293 automated tests, one optional private-font test skipped. A fresh
 Windows dependency install passed the vulnerability audit, lint and formatting.
 The actual packaged START SORI.bat passed setup, selftest, local browser API,
 four-sample Library reading and clean shutdown from a path containing spaces.

@@ -23,7 +23,8 @@ def test_state_and_venv_follow_sori_home(monkeypatch, tmp_path):
     assert py.name.startswith("python")
 
 
-def test_requirement_files_per_platform():
+def test_requirement_files_per_platform(monkeypatch):
+    monkeypatch.delenv("SORI_WHISPER_BACKEND", raising=False)
     assert sori.requirement_files("claude", mac=False) == ["requirements-claude.txt"]
     assert sori.requirement_files("claude", mac=True) == ["requirements-claude.txt", "requirements-mac.txt"]
     assert sori.requirement_files("app", mac=True) == ["requirements-browser.txt"]
@@ -31,6 +32,8 @@ def test_requirement_files_per_platform():
     for files in sori.PROFILES.values():
         for name in files + [sori.MAC_EXTRA]:
             assert (sori.ROOT / name).is_file(), name
+    monkeypatch.setenv("SORI_WHISPER_BACKEND", "faster")
+    assert sori.requirement_files("claude", mac=True) == ["requirements-claude.txt"]
 
 
 def test_env_status_tracks_fingerprint(monkeypatch, tmp_path):

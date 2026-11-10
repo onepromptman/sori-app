@@ -63,7 +63,9 @@ def free_port():
 
 def fake_powershell(monkeypatch, returncode=0, stdout=b"", stderr=b""):
     done = types.SimpleNamespace(returncode=returncode, stdout=stdout, stderr=stderr)
-    monkeypatch.setattr(webserver.os, "name", "nt")
+    # Simulate the picker boundary without changing os.name globally; pathlib
+    # must keep using the host's concrete path class on macOS and Linux.
+    monkeypatch.setattr(webserver, "os", types.SimpleNamespace(name="nt", environ=webserver.os.environ))
     monkeypatch.setattr(webserver.subprocess, "run", lambda *a, **k: done)
     monkeypatch.setattr(webserver.subprocess, "CREATE_NO_WINDOW", 0, raising=False)
 

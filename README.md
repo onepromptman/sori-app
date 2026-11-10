@@ -7,6 +7,38 @@ training decks and self-study guides.
 Built by [OnePromptMan](https://github.com/onepromptman). Open source under the
 MIT license. Local transcription needs no Sori account or API key.
 
+## Open Sori on Windows
+
+1. [Download Sori-browser.zip](https://github.com/onepromptman/sori-app/releases/download/v3.4.0/Sori-browser.zip).
+2. Right-click the ZIP and choose **Extract All**.
+3. Open the extracted **Sori** folder and double-click **START SORI.bat**.
+   If Windows hides extensions, look for **START SORI** with type **Windows Batch File**.
+
+Sori opens in your usual browser. Leave the separate launcher window open.
+The first start needs internet and can take a few minutes. If the launcher asks
+for Python, install [Python 3.11 or newer](https://www.python.org/downloads/),
+include the Python launcher, then double-click **START SORI.bat** again.
+
+To try it, paste a podcast RSS feed, pick an episode, and click **Transcribe**.
+Open **Library** to read it. The first audio transcription downloads a speech model.
+
+This is the [3.4.0 browser beta](https://github.com/onepromptman/sori-app/releases/tag/v3.4.0).
+For macOS or Linux, see [Run from source](#run-from-source).
+
+### Let a desktop assistant open it
+
+If you already use a desktop assistant that can run commands on your computer,
+save **Sori-browser.zip** to Downloads, give the assistant access to that folder,
+and say:
+
+> Extract Sori-browser.zip from Downloads, run START SORI.bat from the
+> extracted Sori folder, and open Sori in my browser. Tell me if Python is missing.
+
+Use a local Codex or ChatGPT Work session, or a local Claude Code session.
+The assistant may ask for permission to run the launcher. Uploading the ZIP to
+a web chat alone cannot start Sori on your computer. The separate `sori.zip`
+is an [optional Claude plugin](#claude-plugin-and-command-line).
+
 ```mermaid
 flowchart LR
     A[Podcast or recording] --> B[Local transcript]
@@ -19,57 +51,6 @@ flowchart LR
 ![Sori podcast queue with four selected AI-focused episode headlines](docs/screenshot-ai-queue.png)
 
 *Edited queue preview with selected AI podcast headlines.*
-
-## Start here
-
-Sori is a **local browser app**. Download it, start its local engine, and use
-it in your normal browser. Audio processing and your library stay on your
-computer. The Windows EXE is an optional launcher, not the primary product.
-
-**Browser edition: 3.4.0 public beta.**
-[Download Sori-browser.zip](https://github.com/onepromptman/sori-app/releases/download/v3.4.0/Sori-browser.zip)
-or read the [release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.4.0).
-
-1. Download **Sori-browser.zip** and extract the whole folder.
-2. Install [Python 3.11 or newer](https://www.python.org/downloads/) if you
-   do not already have it. On Windows, include the Python launcher.
-3. On Windows, double-click **START SORI.bat** in the extracted Sori folder. The first launch prepares
-   Sori's own dependencies, then opens your browser. Keep the launcher running.
-4. Paste a podcast RSS feed, pick an episode and click **Transcribe**.
-   Read and search the result in **Library**.
-
-The extracted download has an obvious starting point:
-
-```text
-Sori/
-  START SORI.bat       <- Windows: double-click this
-  START SORI.command   <- macOS/Linux launcher
-  START HERE.txt       <- short instructions
-  SAMPLES/            <- four fictional transcripts to explore
-  PRIVACY.md
-  LICENSE.txt
-  app/                <- program files; keep this folder beside the launcher
-```
-
-If Windows hides file extensions, look for **START SORI** with type **Windows
-Batch File**. Extract the whole ZIP before starting. Keep the `app` folder
-beside the launcher. It contains the implementation; you do not need to open it.
-
-Later launches reuse the installed dependencies. The first audio transcription
-downloads a speech model. You need disk space and internet access for these
-downloads and for fetching episodes. No Sori account or API key is needed
-for transcription. Your computer must stay on while Sori works.
-
-The local engine does not need the desktop window package or an executable
-builder. On macOS/Linux, see the source launcher below; those platforms have
-not received the Windows acceptance checks. Local file-picker buttons currently
-require Windows. Podcast RSS and the command-line routes are separate from them.
-
-**Optional Windows EXE:** a bundled launcher can be built from source. This 3.4.0 browser release does not include a new EXE;
-the older release's executable is not the current browser package.
-
-YouTube captions work when the source offers accessible captions in your
-chosen language; some videos need additional tools or are unavailable.
 
 ## Try the samples
 
@@ -119,6 +100,9 @@ Stop** shuts it down. Opening Sori again returns to the running copy. The app
 does not automatically start after a reboot. The bundled daily-sweep setup
 is an optional Windows scheduled task; see [automation](docs/AUTOMATE.md).
 
+YouTube captions work when the source offers accessible captions in your
+chosen language; some videos need additional tools or are unavailable.
+
 ## Your data and costs
 
 Transcription runs locally without an API fee. Feed and model downloads use
@@ -144,6 +128,9 @@ python start_sori.py
 
 In the source checkout, use `python3 start_sori.py` on macOS/Linux.
 In the browser ZIP, use `sh "START SORI.command"` from the extracted Sori folder.
+macOS and Linux have not received the Windows acceptance checks. The app's
+local file picker buttons currently require Windows.
+
 For a manually managed environment on Windows:
 
 ```powershell
@@ -154,6 +141,7 @@ uv pip install --python .venv/Scripts/python.exe -r requirements-browser.txt
 
 On macOS/Linux the environment interpreter is `.venv/bin/python`.
 `requirements-app.txt` is the larger optional Windows packaging/desktop set.
+The 3.4.0 browser release does not include a new Windows EXE.
 
 The server binds only `127.0.0.1:17654`. It checks the Host header, request
 origin and a per-launch token. Do not expose it through a public reverse proxy.

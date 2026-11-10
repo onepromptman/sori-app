@@ -1,18 +1,22 @@
 START HERE - SORI
 =================
 
-1. EXTRACT THE WHOLE ZIP
-   On Windows: right-click Sori-browser.zip, then Extract All.
-   Open the extracted Sori folder. Do not launch from inside the ZIP.
+ON WINDOWS
 
-2. DOUBLE-CLICK "START SORI.bat"
-   This is the main Windows start button. If extensions are hidden,
-   it may appear as "START SORI" with type "Windows Batch File".
-   Python 3.11 or newer is required. Get it from python.org if needed.
+1. Right-click Sori-browser.zip and choose Extract All.
+2. Open the extracted Sori folder and double-click START SORI.bat.
+   If Windows hides extensions, look for START SORI (Windows Batch File).
 
-3. LEAVE THE SETUP WINDOW OPEN
-   First launch downloads components and may take a few minutes.
-   Sori then opens in your normal browser. Later launches reuse setup.
+Sori opens in your usual browser. Leave the separate launcher window open.
+The first start needs internet and can take a few minutes. If the launcher
+asks for Python, install Python 3.11 or newer from python.org/downloads/,
+include the Python launcher, then double-click START SORI.bat again.
+
+Prefer help from a desktop assistant that can run commands on your computer?
+Point it to the ZIP in Downloads and say: "Extract Sori-browser.zip from
+Downloads, run START SORI.bat from the extracted Sori folder, and open Sori
+in my browser. Tell me if Python is missing." A web chat upload alone cannot
+start Sori on your computer.
 
 Paste a podcast RSS feed, pick an episode and click Transcribe.
 Open Library to read the transcript. The first audio job downloads
@@ -29,7 +33,8 @@ Keep the app folder beside the launcher. It contains the program files;
 you do not need to open it. Your recordings and library are stored separately.
 
 macOS/Linux: run sh "START SORI.command" from this folder. Those platforms
-and their local file pickers have not received Windows acceptance checks.
+have not received the Windows acceptance checks. Local file pickers require
+Windows.
 
 OPTIONAL TRAINING sends transcripts to Anthropic and uses your paid API
 credits. Read PRIVACY.md. Review generated material against its source.

@@ -16,7 +16,7 @@ flowchart LR
     D --> F[Practice and self-check guide]
 ```
 
-![Sori browser reader after transcribing a fictional recording](docs/screenshot.png)
+![Sori browser reader showing a fictional AI podcast about agents and practical workflows](docs/screenshot-ai-podcast.png)
 
 ## Start here
 

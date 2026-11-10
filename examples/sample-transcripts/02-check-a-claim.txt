@@ -1,0 +1,13 @@
+DEMO - Check a claim against its source
+Sori Samples - 2026-11-09
+https://example.test/sori-samples/02
+
+This is an original fictional transcript example. There is no real podcast or speaker behind it.
+
+Today we are practicing how to separate a source's words from our summary. Start with one claim rather than trying to verify an entire episode at once. Write the claim as a sentence. Then find the exact passage that you believe supports it.
+
+Consider this invented example: a speaker says, "The workshop participants finished the exercise during the session." A summary that says everyone mastered the skill would go beyond the source. Finishing an exercise and mastering a skill are different claims. The source sentence tells us about completion, but it does not establish mastery or later performance.
+
+Check the scope as well. Who was included? What action or outcome was described? Was the statement about a single example, a particular group, or a broader population? Preserve those limits when you write your notes. If a number is mentioned, keep its unit and the thing it measures together. Finding the same number elsewhere in a transcript is not enough to support a different claim.
+
+For your practice, create three columns called Claim, Source passage, and What remains uncertain. Fill one row using a short passage you are allowed to use. If you cannot find supporting words, mark the claim unsupported instead of making the passage fit. You are finished when another reader can follow the link between your claim and the source, including its limitations.

@@ -63,6 +63,7 @@ def browser_tree(source: Path, target: Path) -> None:
     }
     for name, dest in entrypoints.items():
         shutil.copyfile(source / name, target / dest)
+    shutil.copytree(source / "examples/sample-transcripts", target / "SAMPLES")
 
 
 def build(root: Path, windows_exe: bool = False) -> Path:

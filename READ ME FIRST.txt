@@ -18,6 +18,10 @@ Paste a podcast RSS feed, pick an episode and click Transcribe.
 Open Library to read the transcript. The first audio job downloads
 a speech model. No Sori account or API key is needed for transcription.
 
+TRY THE SAMPLES: open the SAMPLES folder for four fictional transcripts.
+Read any TXT file immediately, or follow SAMPLES/README.md to add them to
+your Library. These examples contain no real person's recordings.
+
 FINISHED? Use Settings > Stop. Closing just the tab leaves Sori running.
 START AGAIN? Double-click START SORI.bat again.
 
@@ -30,7 +34,7 @@ and their local file pickers have not received Windows acceptance checks.
 OPTIONAL TRAINING sends transcripts to Anthropic and uses your paid API
 credits. Read PRIVACY.md. Review generated material against its source.
 
-OPTIONAL WINDOWS EXE: if you downloaded Sori-win64.zip instead, open
-Sori.exe. It bundles Python and starts the same browser app.
+This is the 3.2.2 public browser beta. A new Windows EXE is not included.
+The optional paid training route has not had a live paid acceptance test.
 
 Help and source: https://github.com/onepromptman/sori-app

@@ -18,6 +18,8 @@ def test_browser_package_needs_no_executable_builder(tmp_path, monkeypatch):
         "READ ME FIRST.txt",
         "LICENSE",
         "PRIVACY.md",
+        "examples/sample-transcripts/README.md",
+        "examples/sample-transcripts/demo.txt",
     ]:
         path = tmp_path / name
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -43,6 +45,10 @@ def test_browser_package_needs_no_executable_builder(tmp_path, monkeypatch):
             "Sori/PRIVACY.md",
         }
         assert archive.getinfo("Sori/START SORI.command").external_attr >> 16 & 0o111
+        assert (
+            archive.read("Sori/SAMPLES/demo.txt")
+            == (tmp_path / "examples/sample-transcripts/demo.txt").read_bytes()
+        )
     with zipfile.ZipFile(out / "Sori-source.zip") as archive:
         assert "Sori/start_sori.py" in archive.namelist()
     assert not (out / "Sori-win64.zip").exists()

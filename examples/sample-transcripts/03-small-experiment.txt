@@ -1,0 +1,13 @@
+DEMO - Turn a question into a small experiment
+Sori Samples - 2026-11-09
+https://example.test/sori-samples/03
+
+This is an original fictional transcript example. There is no real podcast or speaker behind it.
+
+This sample lesson turns a broad question into something you can inspect. Suppose you ask, "Would a checklist help me prepare a practice presentation?" That question is a starting point. Before changing anything, decide what you mean by help.
+
+In our invented scenario, the learner cares about remembering the opening, the example, and the closing question. The checklist therefore contains those items. A useful observation might be whether each item is present in a rehearsal. Another observation could be how much the learner needs to consult their notes. These are proposed observations, not results we have measured.
+
+Keep the experiment small enough to carry out. Choose a short presentation, rehearse it, and record what happened. Then use the checklist for another rehearsal and record the same observations. Notice that familiarity with the presentation may also change performance. You cannot confidently assign every difference to the checklist from this small exercise alone.
+
+Your practice task is to write an experiment card with a question, the change you will try, the observations you will record, and one alternative explanation for any difference. End with a decision you could make from what you learn, such as keeping the checklist, revising it, or trying another rehearsal. The point is to make your reasoning visible while keeping conclusions proportional to the evidence.

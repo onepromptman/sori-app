@@ -116,3 +116,11 @@ shutdown from a directory whose name contains spaces. State was isolated and
 the browser environment had neither pywebview nor PyInstaller installed.
 The source ZIP retains the original source layout. Checksums and separate
 browser/source manifests cover the exact release files.
+
+## Public browser beta samples
+
+Four original fictional TXT transcripts ship in SAMPLES/ at the top level of
+the browser ZIP, with instructions for reading them or adding them to Library.
+They are authored examples, not output from real podcast recordings. Packaging
+regression checks verify that samples match the tracked source. No personal
+library, API key, recording or application state is bundled.

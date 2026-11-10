@@ -1,6 +1,10 @@
 # Changelog
 
-## 3.2.2 (release candidate)
+## 3.2.2 (public browser beta)
+
+- Include four clearly labeled fictional sample transcripts and instructions
+  in the top-level SAMPLES folder. No personal library is included.
+- Link directly to the browser beta download and disclose its validation limits.
 
 - Put START SORI.bat and START HERE.txt at the top of the browser download;
   keep code and developer scaffolding inside app/. Preserve the full source

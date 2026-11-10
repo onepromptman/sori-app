@@ -24,10 +24,9 @@ Sori is a **local browser app**. Download it, start its local engine, and use
 it in your normal browser. Audio processing and your library stay on your
 computer. The Windows EXE is an optional launcher, not the primary product.
 
-**Browser edition: 3.2.2 release candidate.** Check the
-[release page](https://github.com/onepromptman/sori-app/releases/latest) for
-the matching **Sori-browser.zip**. If it is not listed yet, use the source
-launcher described below while the browser release awaits publication.
+**Browser edition: 3.2.2 public beta.**
+[Download Sori-browser.zip](https://github.com/onepromptman/sori-app/releases/download/v3.2.2/Sori-browser.zip)
+or read the [release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.2.2).
 
 1. Download **Sori-browser.zip** and extract the whole folder.
 2. Install [Python 3.11 or newer](https://www.python.org/downloads/) if you
@@ -44,6 +43,7 @@ Sori/
   START SORI.bat       <- Windows: double-click this
   START SORI.command   <- macOS/Linux launcher
   START HERE.txt       <- short instructions
+  SAMPLES/            <- four fictional transcripts to explore
   PRIVACY.md
   LICENSE.txt
   app/                <- program files; keep this folder beside the launcher
@@ -63,13 +63,20 @@ builder. On macOS/Linux, see the source launcher below; those platforms have
 not received the Windows acceptance checks. Local file-picker buttons currently
 require Windows. Podcast RSS and the command-line routes are separate from them.
 
-**Optional Windows convenience download:** **Sori-win64.zip** bundles Python
-so you can extract it and open **Sori.exe** without installing Python yourself.
-It opens the same local browser app. The older desktop window is an optional
-mode. This unsigned download should be checked against its release checksum.
+**Optional Windows EXE:** developers can build a bundled launcher with
+`--windows-exe`. This 3.2.2 browser release does not include a new EXE;
+the older release's executable is not the current browser package.
 
 YouTube captions work when the source offers accessible captions in your
 chosen language; some videos need additional tools or are unavailable.
+
+## Try the samples
+
+The download includes four original fictional transcripts in **SAMPLES**.
+Open a TXT file to read it immediately. To explore them in Library, follow the
+included [sample instructions](examples/sample-transcripts/README.md).
+They contain no real podcast, speaker, personal recording or customer material.
+They demonstrate learning activities, not measured transcription accuracy.
 
 ## From listening to learning
 
@@ -77,6 +84,9 @@ Open a transcript in Library and choose **Generate Training**. With your own
 Claude API key saved in Settings, Sori requests an editable slide deck and a
 study guide with learning objectives, key concepts, a practice exercise,
 retrieval questions, a separate answer key, and suggested review sessions.
+
+This beta's paid training route has automated mocked tests but has not received
+a live paid acceptance test. Current account and model access remain unverified.
 
 Training generation sends the transcript and episode metadata to Anthropic
 and uses paid API credits. The app asks before a manual request or before

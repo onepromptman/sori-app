@@ -1,28 +1,9 @@
-__pycache__/
-*.pyc
-.venv/
-venv/
-*.mp3
-*.wav
-*.vtt
-transcript*.txt
-.DS_Store
-
-# PyInstaller build output (the .spec IS committed - it's the build recipe)
 build/
-dist/
 /browser/design/
-
-# release artifacts built by Sori.spec (uploaded to GitHub Releases, not tracked)
+__pycache__/
 *.zip
-
-# local secrets: an ANTHROPIC_API_KEY belongs in Settings or the environment, never in git
-.env
-
-# User state and optional private renderer never belong in public source.
-engine/
-credentials.json
-shows.json
+*.wav
+*.mp3
 *.log
-Transcripts/
-Trainings/
+.env
+.DS_Store

@@ -1,4 +1,0 @@
-# Local browser app. No desktop window, private renderer, or executable builder.
--r requirements.txt
-anthropic==0.89.0
-python-pptx==1.0.2

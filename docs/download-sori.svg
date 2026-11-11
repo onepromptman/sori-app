@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="330" height="60" viewBox="0 0 330 60">
+  <title>Download Sori setup ZIP for Mac and Windows</title>
+  <rect width="330" height="60" rx="9" fill="#104e9e"/>
+  <path d="M29 18v17m-7-7 7 7 7-7m-14 9v5h14v-5" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <g fill="#fff" font-family="Arial, Helvetica, sans-serif">
+    <text x="49" y="28" font-size="18" font-weight="700">Download Sori setup ZIP</text>
+    <text x="49" y="46" font-size="13">Mac and Windows</text>
+  </g>
+</svg>

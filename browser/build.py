@@ -29,12 +29,16 @@ SHARED_ASSETS = (
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("output", type=Path, help="New directory for the static site and ZIPs")
+    parser.add_argument(
+        "output", type=Path, help="New directory for the static site and ZIPs"
+    )
     args = parser.parse_args()
     output = args.output
     output.mkdir(parents=True)
     files = {name: ROOT / "browser" / name for name in APP_FILES}
-    files.update({f"design/{Path(name).name}": ROOT / "ui" / name for name in SHARED_ASSETS})
+    files.update(
+        {f"design/{Path(name).name}": ROOT / "ui" / name for name in SHARED_ASSETS}
+    )
     files["LICENSE.txt"] = ROOT / "LICENSE"
     web_zip = output / "Sori-web.zip"
     setup_zip = output / "Sori-setup.zip"

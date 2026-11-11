@@ -1,91 +1,54 @@
 # Sori
 
-Turn audio and podcasts into searchable transcripts and keep the finished
-slides with them. The web edition runs Whisper in your browser. You can
-transcribe without an account or chatbot.
+[![Download Sori setup ZIP for Mac and Windows](docs/download-sori.svg)](https://github.com/onepromptman/sori-app/releases/download/v3.4.2/Sori-setup.zip)
+
+Turn podcasts and recordings into searchable transcripts and keep your slides
+and study guides beside them. Sori runs Whisper in your browser.
 
 ## Try Sori
 
-1. Save [Sori-setup.zip](https://github.com/onepromptman/sori-app/releases/download/v3.4.2/Sori-setup.zip)
-   in Downloads. The same ZIP works with a local desktop assistant on Mac
-   or Windows.
-2. In ChatGPT Desktop, open **Codex** on **This computer**. In Claude
-   Desktop, use **Claude Code** on your computer. Paste:
+1. Click **Download Sori setup ZIP** and save it in **Downloads**.
+2. In **ChatGPT Desktop**, open **Codex** and choose **This computer**. Or
+   open **Claude Desktop** and use **Claude Code** on your computer.
+3. Paste the message below into the assistant.
 
    > Set up Sori from Sori-setup.zip in Downloads on this computer. Follow
    > SETUP.txt, then open Sori in my browser.
 
-3. Click **Open sample** to see a transcript and its training side by side.
-   Choose an audio file or paste a podcast RSS URL, then click **Transcribe**.
-   Stay online for the first speech model download.
+When Sori opens in your browser, click **Open sample**. The sample has a
+fictional transcript and a short lesson you can try right away.
 
-To make slides, copy the request into ChatGPT or Claude. Download the
-PowerPoint or study guide and add it to the same transcript in Sori.
-Your transcripts and imported training stay in this browser.
-See the [trial and hosting guide](docs/HOSTING.md).
+![The Sori browser app showing its Library, fictional transcript, and sample lesson side by side](docs/sori-web-screenshot.svg)
 
-YouTube links are saved so you can open the original. To transcribe an
-episode, use its podcast feed or choose an audio file you can access. A feed
-may list episodes even when its audio host blocks direct browser downloads.
-Choose **Open audio** or import a file in that case. To try The AI Daily
-Brief, paste `https://anchor.fm/s/f7cac464/podcast/rss` into **Sources**.
+## Transcribe and make slides
 
-<details>
-<summary>Earlier desktop releases and local launchers</summary>
-
-The earlier [3.4.0 beta](https://github.com/onepromptman/sori-app/releases/tag/v3.4.0)
-uses its own Python launcher. Open the release for its download and setup steps.
-For the current desktop source and bundled launcher builds, see **For engineers**.
-
-### Transcribe an episode
-
-Click **Try a sample transcript** or paste a podcast RSS feed into **Sources**,
-press Enter, and click **Transcribe**. Find the result in **Library**.
-
-If YouTube limits captions, try the show's podcast feed.
-
-### Make slides in the desktop edition
-
-1. Open a transcript and click **Make slides**.
-2. Choose **Open ChatGPT** or **Open Claude**. Sori copies the request and transcript.
-3. Paste it into your chat and ask it to create an editable PowerPoint and study guide.
-   Download the result from the chat if file creation is available.
-
-Sori keeps your transcript local until you choose to share it. The chat service
-you choose handles the pasted text under its own settings. [Privacy](PRIVACY.md)
-
-Use **Settings > Stop** to close Sori. Open the launcher to start it again.
-
-</details>
+- **Transcribe.** Pick an audio file or paste a podcast RSS URL in **Sources**.
+  Click **Transcribe**. Stay online the first time so Whisper can download.
+  Some publishers block direct audio downloads. In that case, click **Open
+  audio** and import a copy you can access.
+- **Use YouTube links.** Save a video, playlist, or channel to open it later.
+  For transcription, use the show's podcast feed or a media file you can
+  access. The AI Daily Brief feed is
+  `https://anchor.fm/s/f7cac464/podcast/rss`.
+- **Make slides.** Open a transcript and choose **Make slides in ChatGPT or
+  Claude**. Paste the request into your chat, then bring the finished
+  PowerPoint or study guide back to the same transcript in Sori.
 
 ```mermaid
 flowchart LR
-    A[Podcast] --> B[Local transcript]
-    B --> C[Library]
+    A[Audio file or podcast] --> B[Local transcript]
+    B --> C[Sori library]
     C --> D[Optional slides in ChatGPT or Claude]
+    D --> C
 ```
 
-![Sori podcast queue with four selected AI-focused episode headlines](docs/screenshot-ai-queue.png)
+Your library is stored in the browser you use to open Sori. Download copies of
+transcripts or files you want to keep elsewhere. The chat service receives a
+transcript when you choose to send it. [Privacy](PRIVACY.md)
 
-## For engineers
+The web beta was tested in Chrome on Windows. Full transcription in Mac Safari
+and first-time setup through Claude Desktop still need a Mac trial.
 
-Build the standalone ZIPs from tracked source with Python 3.11+, Git, and uv:
-
-```sh
-python portable_release.py --output build/portable --cache build/runtime windows mac-arm mac-intel
-```
-
-The Mac bundles target macOS 14 or newer. The Mac ZIPs use executable
-launchers and have not been through Apple notarization. Test on the target
-hardware before distribution.
-
-For source use on Mac, Windows, or Linux, run `python start_sori.py` with
-Python 3.11 or newer. The browser file picker is available on Windows.
-The server listens at `127.0.0.1:17654` for local use.
-
-`python package.py` builds the Python-required browser, source, and plugin ZIPs.
-The optional Claude plugin and advanced CLI are documented separately.
-See [CLI](docs/CLI.md), [pipeline](docs/PIPELINE.md), [automation](docs/AUTOMATE.md),
-[acceptance](ACCEPTANCE.md), and [third-party notices](THIRD-PARTY-NOTICES.md).
-
-[MIT license](LICENSE). [Security reporting](SECURITY.md).
+[Release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.4.2) ·
+[Build or host Sori](docs/HOSTING.md) · [MIT license](LICENSE) ·
+[Security reporting](SECURITY.md)

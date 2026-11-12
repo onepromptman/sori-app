@@ -1,9 +1,9 @@
 # Sori
 
-[![Download Sori setup ZIP for Mac and Windows](docs/download-sori.svg)](https://github.com/onepromptman/sori-app/releases/download/v3.4.2/Sori-setup.zip)
+[![Download Sori setup ZIP for Mac and Windows](docs/download-sori.svg)](https://github.com/onepromptman/sori-app/releases/download/v3.4.3/Sori-setup.zip)
 
-Turn podcasts and recordings into searchable transcripts and keep your slides
-and study guides beside them. Sori runs Whisper in your browser.
+Keep transcripts from YouTube, podcasts, and recordings beside your slides and
+study guides. Sori transcribes audio on your device.
 
 ## Try Sori
 
@@ -20,24 +20,29 @@ fictional transcript and a short lesson you can try right away.
 
 ![The Sori browser app showing its Library, fictional transcript, and sample lesson side by side](docs/sori-web-screenshot.svg)
 
-## Transcribe and make slides
+## Add your own material
 
-- **Transcribe.** Pick an audio file or paste a podcast RSS URL in **Sources**.
-  Click **Transcribe**. Stay online the first time so Whisper can download.
+- **YouTube.** Paste a video link in **Sources** and click **Add**. Open the
+  video, choose **Show transcript** in its description, and paste the text
+  into Sori. If captions are missing or inaccurate, use **Record the video's
+  audio** in desktop Chrome or **Find a podcast feed** to search by show name.
+- **Podcasts and files.** Paste a podcast RSS link in **Sources** and choose an
+  episode, or pick an audio or video file. Click **Transcribe**. Stay online
+  the first time so Whisper can download.
   Some publishers block direct audio downloads. In that case, click **Open
   audio** and import a copy you can access.
-- **Use YouTube links.** Save a video, playlist, or channel to open it later.
-  For transcription, use the show's podcast feed or a media file you can
-  access. The AI Daily Brief feed is
-  `https://anchor.fm/s/f7cac464/podcast/rss`.
+- **Other websites.** In desktop Chrome, open **Source options** and choose
+  **Record tab audio**. Share the tab with its audio on, play the part you
+  want, then return to Sori and click **Finish and transcribe**.
 - **Make slides.** Open a transcript and choose **Make slides in ChatGPT or
   Claude**. Paste the request into your chat, then bring the finished
   PowerPoint or study guide back to the same transcript in Sori.
 
 ```mermaid
 flowchart LR
-    A[Audio file or podcast] --> B[Local transcript]
+    A[Podcast, file, or tab audio] --> B[Transcribe on your device]
     B --> C[Sori library]
+    E[YouTube captions] --> C
     C --> D[Optional slides in ChatGPT or Claude]
     D --> C
 ```
@@ -46,9 +51,9 @@ Your library is stored in the browser you use to open Sori. Download copies of
 transcripts or files you want to keep elsewhere. The chat service receives a
 transcript when you choose to send it. [Privacy](PRIVACY.md)
 
-The web beta was tested in Chrome on Windows. Full transcription in Mac Safari
-and first-time setup through Claude Desktop still need a Mac trial.
+This release was tested in Chrome on Windows. Safari transcription and
+first-time setup through Claude Desktop still need a Mac trial.
 
-[Release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.4.2) ·
+[Release notes](https://github.com/onepromptman/sori-app/releases/tag/v3.4.3) ·
 [Build or host Sori](docs/HOSTING.md) · [MIT license](LICENSE) ·
 [Security reporting](SECURITY.md)

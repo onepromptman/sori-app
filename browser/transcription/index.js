@@ -1,6 +1,6 @@
 const SAMPLE_RATE = 16000;
 const MAX_FILE_BYTES = 150 * 1024 * 1024;
-const MAX_DURATION_SECONDS = 2 * 60 * 60;
+export const MAX_DURATION_SECONDS = 2 * 60 * 60;
 let worker;
 let busy = false;
 

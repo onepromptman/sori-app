@@ -23,9 +23,10 @@ In the repository's **Settings > Pages**, choose **GitHub Actions** as
 the source. In **Actions**, run [Publish Sori web](../.github/workflows/pages.yml)
 on `main`. It builds and deploys the static site.
 
-Verify the deployed link in Safari on a Mac and in Chrome. Open the
-sample, transcribe an audio file, and import a PowerPoint from a clean
-browser profile before sharing the link. People using the deployed URL
+Verify the deployed link in Safari on a Mac and in Chrome. From a clean
+browser profile, open the sample, import a YouTube transcript, transcribe
+an audio file, and import a PowerPoint. In desktop Chrome, also record and
+transcribe a short clip from a shared tab. People using the deployed URL
 open Sori directly in the browser.
 
 [GitHub Pages setup](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site)

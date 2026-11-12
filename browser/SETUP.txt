@@ -9,6 +9,9 @@ TRY SORI
 
 3. In Sori, click Open sample. To try your own audio, choose an MP3, WAV,
    or M4A file and click Transcribe. Stay online for the first model download.
+4. To try YouTube, paste a video link under Sources and click Add. Paste
+   its transcript, record its tab audio in desktop Chrome, or find the
+   show's podcast feed.
 
 FOR THE DESKTOP ASSISTANT
 

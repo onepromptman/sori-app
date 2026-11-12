@@ -7,6 +7,7 @@ const YOUTUBE_HOSTS = new Set([
   "youtu.be", "www.youtu.be", "youtube-nocookie.com", "www.youtube-nocookie.com",
 ]);
 const MEDIA_EXTENSIONS = /\.(aac|aif|aiff|flac|m4a|m4b|mp3|mp4|ogg|opus|wav|webm)$/i;
+const VIDEO_ID = /^[\w-]{11}$/;
 
 export class SourceError extends Error {
   constructor(code, message) {
@@ -33,7 +34,7 @@ function youtubeUrl(url) {
   const video = url.hostname.endsWith("youtu.be") ? section :
     section === "watch" ? url.searchParams.get("v") :
     ["shorts", "live", "embed", "v"].includes(section) ? id : null;
-  if (video && /^[\w-]{11}$/.test(video)) {
+  if (video && VIDEO_ID.test(video)) {
     return `https://www.youtube.com/watch?v=${video}`;
   }
   const list = url.searchParams.get("list");
@@ -66,6 +67,14 @@ export function describeSource(raw) {
   url.hash = "";
   const href = kind === "youtube" ? youtubeUrl(url) : url.href;
   return { kind, url: href, key: href };
+}
+
+export function youtubeVideoId(raw) {
+  const url = webUrl(raw);
+  if (!url || !YOUTUBE_HOSTS.has(url.hostname)) return "";
+  const normalized = new URL(youtubeUrl(url));
+  const id = normalized.searchParams.get("v");
+  return normalized.pathname === "/watch" && VIDEO_ID.test(id ?? "") ? id : "";
 }
 
 const children = (node, tag) => Array.from(node.children).filter((child) => child.localName === tag);
@@ -228,6 +237,31 @@ export async function loadFeed(source, { signal } = {}) {
     name: "feed", limit: MAX_FEED_BYTES, timeout: 20_000, signal,
   });
   return parseFeedXml(await blob.text(), url);
+}
+
+export async function searchPodcastFeeds(name, { signal } = {}) {
+  const query = name.trim();
+  if (!query) throw new SourceError("empty-search", "Enter the name of the show.");
+  const url = new URL("https://itunes.apple.com/search");
+  url.search = new URLSearchParams({ term: query, media: "podcast", entity: "podcast", limit: "8" });
+  let results;
+  try {
+    const { blob } = await readResponse(url.href, {
+      name: "podcast search", limit: 1024 * 1024, timeout: 10_000, signal,
+    });
+    results = JSON.parse(await blob.text()).results;
+    if (!Array.isArray(results)) throw new Error("Invalid podcast search results.");
+  } catch (error) {
+    if (error.name === "AbortError") throw error;
+    throw new SourceError("search-failed", "Podcast search is unavailable. Try again or paste the RSS feed in Sources.");
+  }
+  const feeds = new Map();
+  for (const result of results) {
+    const feed = webUrl(result?.feedUrl);
+    const title = typeof result?.collectionName === "string" ? result.collectionName.trim() : "";
+    if (title && feed && !YOUTUBE_HOSTS.has(feed.hostname)) feeds.set(feed.href, { title, url: feed.href });
+  }
+  return [...feeds.values()];
 }
 
 export async function fetchEpisodeAudio(episode, { signal, onProgress } = {}) {

@@ -1,12 +1,14 @@
 import { addSource, readLibrary, removeRecord, saveRecord, saveSlideResults, updateSource, watchLibrary } from "./storage.js";
-import { describeSource, fetchEpisodeAudio, loadFeed, readFeedFile } from "./sources/index.js";
+import { describeSource, fetchEpisodeAudio, loadFeed, readFeedFile, searchPodcastFeeds, youtubeVideoId } from "./sources/index.js";
 import { createSlideRequest, prepareSlideImports } from "./slides/index.js";
 import { transcribeAudio } from "./transcription/index.js";
+import { canRecordTabAudio, recordTabAudio } from "./transcription/tab-audio.js";
 
 const $ = id => document.getElementById(id);
 let library = { sources: [], transcripts: [], files: [], evidence: [] };
 let selected = null;
 let running = null;
+let feedSearch = null;
 let refreshNumber = 0;
 const expanded = new Set();
 
@@ -89,14 +91,16 @@ async function remove(store, id, text) {
 function renderSources() {
   const sources = [...library.sources].sort((a, b) => a.title.localeCompare(b.title));
   $("sources").replaceChildren();
-  if (!sources.length) $("sources").append(element("p", "Your podcast and YouTube links will appear here.", "small"));
+  if (!sources.length) $("sources").append(element("p", "Your podcast feeds will appear here.", "small"));
   for (const source of sources) {
     const row = element("div", undefined, "entry");
     row.append(element("p", source.title, "entry-title"));
     const actions = element("div", undefined, "actions");
     if (source.kind === "youtube") {
       actions.append(link("Open YouTube", source.url));
-      row.append(element("p", "Use the podcast feed or a local media file to transcribe.", "small"));
+      if (youtubeVideoId(source.url)) {
+        actions.append(button("Paste transcript", () => openYouTubeImport(source.url)));
+      }
     } else if (source.kind === "rss") {
       actions.append(button("Refresh episodes", () => updateFeed(source)));
     }
@@ -118,7 +122,7 @@ function renderSources() {
           episode.title, (signal, progress) => fetchEpisodeAudio(episode, {
             signal,
             onProgress: ({ loaded, total }) => progress("Downloading episode audio…", total ? loaded / total : undefined)
-          }), source.title
+          }), { sourceTitle: source.title }
         )));
         item.append(link("Open audio", episode.audioUrl));
         list.append(item);
@@ -162,24 +166,137 @@ $("source-form").addEventListener("submit", async event => {
   const submit = event.currentTarget.querySelector("button");
   submit.disabled = true;
   try {
-    const source = describeSource($("source-url").value);
+    const input = $("source-url");
+    const source = describeSource(input.value);
+    if (source.kind === "youtube") {
+      if (!youtubeVideoId(source.url)) throw new Error("Open a video on YouTube and paste its video link here.");
+      report("");
+      openYouTubeImport(source.url);
+      return;
+    }
     if (library.sources.some(item => item.id === source.key)) {
       throw new Error("This source is already in Sori. Open it under Sources.");
     }
-    report("Reading the source…");
-    const feed = source.kind === "youtube"
-      ? { title: `YouTube · ${new URL(source.url).pathname === "/watch"
-        ? new URL(source.url).searchParams.get("v") : new URL(source.url).pathname.slice(1) || "Link"}`, episodes: [] }
-      : await loadFeed(source);
+    report("Reading the podcast feed…");
+    const feed = await loadFeed(source);
     await saveSource(source, feed);
-    $("source-url").value = "";
-    report(source.kind === "youtube"
-      ? "YouTube link saved. Open the original, use the podcast RSS feed, or choose an audio file you can access."
-      : "Podcast added. Pick an episode under Sources.");
+    input.value = "";
+    report("Podcast added. Pick an episode under Sources.");
   } catch (error) {
     report(message(error), true);
   } finally {
     submit.disabled = false;
+  }
+});
+
+function openYouTubeImport(url) {
+  const dialog = $("youtube-import");
+  feedSearch?.abort();
+  $("youtube-transcript-form").reset();
+  $("youtube-record-options").open = false;
+  $("feed-search-form").reset();
+  $("feed-search-options").open = false;
+  $("feed-search-results").replaceChildren();
+  $("youtube-video-link").replaceChildren(link("Open YouTube", url));
+  report("", false, $("youtube-import-status"));
+  report("", false, $("feed-search-status"));
+  dialog.dataset.url = url;
+  dialog.showModal();
+}
+
+$("close-youtube-import").addEventListener("click", () => $("youtube-import").close());
+$("youtube-import").addEventListener("close", event => {
+  if (!event.currentTarget.open) {
+    feedSearch?.abort();
+    feedSearch = null;
+  }
+});
+
+$("youtube-transcript-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  const submit = event.currentTarget.querySelector("button[type=submit]");
+  const status = $("youtube-import-status");
+  const dialog = $("youtube-import");
+  const url = dialog.dataset.url;
+  const text = $("youtube-transcript").value.trim();
+  if (!text) return report("Paste the transcript before saving.", true, status);
+  const title = youtubeTitle(url);
+  const entry = { id: crypto.randomUUID(), title, sourceTitle: "YouTube transcript", sourceUrl: url, text, created: Date.now() };
+  submit.disabled = true;
+  try {
+    await saveRecord("transcripts", entry);
+    dialog.close();
+    await openTranscript(entry.id);
+    report("YouTube transcript saved in this browser.");
+  } catch (error) {
+    report(message(error), true, dialog.open ? status : $("notice"));
+  } finally {
+    submit.disabled = false;
+  }
+});
+
+function youtubeTitle(url) {
+  return $("youtube-title").value.trim() || `YouTube · ${youtubeVideoId(url)}`;
+}
+
+$("record-youtube").addEventListener("click", () => {
+  const dialog = $("youtube-import");
+  const sourceUrl = dialog.dataset.url;
+  if (!canRecordTabAudio()) {
+    return report("Tab audio sharing is unavailable here. Try desktop Chrome or paste the transcript.", true, $("youtube-import-status"));
+  }
+  if (running) return report("Wait for the current transcription to finish.", true, $("youtube-import-status"));
+  dialog.close();
+  return startTranscription(youtubeTitle(sourceUrl), captureAudio, { sourceTitle: "YouTube tab audio", sourceUrl });
+});
+
+$("record-tab").addEventListener("click", () => {
+  if (!canRecordTabAudio()) return report("Tab audio sharing is unavailable here. Try desktop Chrome or choose an audio or video file.", true);
+  return startTranscription("Browser tab recording", captureAudio, { sourceTitle: "Browser tab audio" });
+});
+
+async function captureAudio(signal, progress) {
+  const finish = $("finish-recording");
+  progress("Choose a browser tab and share its audio.");
+  $("task").scrollIntoView({ block: "nearest" });
+  try {
+    return await recordTabAudio({ signal, onRecording: stop => {
+      progress("Recording tab audio. Play what you want to transcribe, then finish the recording.");
+      finish.onclick = stop;
+      finish.hidden = false;
+    } });
+  } finally {
+    finish.hidden = true;
+    finish.onclick = null;
+  }
+}
+
+$("feed-search-form").addEventListener("submit", async event => {
+  event.preventDefault();
+  feedSearch?.abort();
+  const controller = new AbortController();
+  feedSearch = controller;
+  const status = $("feed-search-status");
+  const results = $("feed-search-results");
+  results.replaceChildren();
+  report("Searching for podcast feeds…", false, status);
+  try {
+    const feeds = await searchPodcastFeeds($("feed-query").value, { signal: controller.signal });
+    if (controller.signal.aborted) return;
+    for (const feed of feeds) {
+      const item = element("li", feed.title);
+      item.append(button("Add feed", () => {
+        $("youtube-import").close();
+        $("source-url").value = feed.url;
+        $("source-form").requestSubmit();
+      }));
+      results.append(item);
+    }
+    report(feeds.length ? "" : "No podcast feeds found. Try the show’s exact name.", false, status);
+  } catch (error) {
+    if (!controller.signal.aborted) report(message(error), true, status);
+  } finally {
+    if (feedSearch === controller) feedSearch = null;
   }
 });
 
@@ -200,7 +317,7 @@ $("feed-file").addEventListener("change", async event => {
   }
 });
 
-async function startTranscription(title, loadAudio, sourceTitle = "Audio file") {
+async function startTranscription(title, loadAudio, { sourceTitle = "Audio file", sourceUrl } = {}) {
   if (running) {
     report("A transcription is already running in this tab.");
     return;
@@ -229,7 +346,7 @@ async function startTranscription(title, loadAudio, sourceTitle = "Audio file") 
     });
     if (controller.signal.aborted) return;
     if (!result.text.trim()) throw new Error("Whisper didn’t find any speech in this audio.");
-    const entry = { id: crypto.randomUUID(), title, sourceTitle, ...result, created: Date.now() };
+    const entry = { id: crypto.randomUUID(), title, sourceTitle, sourceUrl, ...result, created: Date.now() };
     await saveRecord("transcripts", entry);
     await openTranscript(entry.id);
     report("Transcript saved in this browser.");
@@ -328,6 +445,7 @@ function renderReader() {
   if (!item) return;
   $("reader-title").textContent = item.title;
   $("reader-meta").textContent = item.sourceTitle;
+  if (item.sourceUrl) $("reader-meta").append(" · ", link("Open YouTube", item.sourceUrl));
   $("reader-text").textContent = item.text;
   $("sample-training").hidden = item.id !== "sample";
   const panel = $("slide-results");

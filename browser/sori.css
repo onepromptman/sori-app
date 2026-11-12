@@ -252,6 +252,18 @@ details summary { cursor: pointer; font-weight: 600; color: var(--cobalt); }
 footer { color: var(--muted); font-size: .85rem; border-top: 1px solid var(--line); padding: .7rem 1rem 1rem; }
 dialog { max-width: min(28rem, 92vw); border: 1px solid var(--line); padding: 1.15rem; background: var(--paper); }
 dialog::backdrop { background: #14171c60; }
+#youtube-import { width: min(34rem, 92vw); max-width: 92vw; }
+#youtube-import p { margin-block: .5rem; }
+#youtube-title, #youtube-transcript {
+  display: block;
+  width: 100%;
+  margin: .24rem 0 .6rem;
+  border: 1px solid var(--line);
+  padding: .38rem .5rem;
+  background: var(--paper);
+  font: inherit;
+}
+#youtube-transcript { resize: vertical; }
 @media (max-width: 49rem) {
   .workspace { grid-template-columns: minmax(0, 1fr); }
   .rail { border-right: 0; border-bottom: 1px solid var(--line); padding-bottom: 1rem; }

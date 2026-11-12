@@ -14,6 +14,7 @@ APP_FILES = (
     "sources/index.js",
     "slides/index.js",
     "transcription/index.js",
+    "transcription/tab-audio.js",
     "transcription/worker.js",
 )
 SHARED_ASSETS = (

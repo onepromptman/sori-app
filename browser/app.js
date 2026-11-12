@@ -257,11 +257,11 @@ $("record-tab").addEventListener("click", () => {
 
 async function captureAudio(signal, progress) {
   const finish = $("finish-recording");
-  progress("Choose a browser tab and share its audio.");
+  progress("Choose the tab you want to record. Turn on Also share tab audio and click Share.");
   $("task").scrollIntoView({ block: "nearest" });
   try {
     return await recordTabAudio({ signal, onRecording: stop => {
-      progress("Recording tab audio. Play what you want to transcribe, then finish the recording.");
+      progress("Recording tab audio. Press Play in the shared tab. When you have the part you want, return here and click Finish and transcribe.");
       finish.onclick = stop;
       finish.hidden = false;
     } });
@@ -323,6 +323,9 @@ async function startTranscription(title, loadAudio, { sourceTitle = "Audio file"
     return;
   }
   const controller = new AbortController();
+  const taskProgress = $("task-progress");
+  const preview = $("task-preview");
+  const previewText = $("task-preview-text");
   running = controller;
   $("task").hidden = false;
   $("cancel").disabled = false;
@@ -330,8 +333,8 @@ async function startTranscription(title, loadAudio, { sourceTitle = "Audio file"
   report("");
   function progress(label, ratio) {
     $("task-text").textContent = label;
-    if (Number.isFinite(ratio)) $("task-progress").value = ratio;
-    else $("task-progress").removeAttribute("value");
+    taskProgress.hidden = !Number.isFinite(ratio);
+    if (!taskProgress.hidden) taskProgress.value = ratio;
   }
   try {
     progress("Opening audio…");
@@ -342,7 +345,12 @@ async function startTranscription(title, loadAudio, { sourceTitle = "Audio file"
         decoding: "Reading audio…",
         model: "Getting Whisper ready. The first download can take a few minutes.",
         transcribing: "Transcribing in this browser…"
-      }[event.stage] || "Working…", event.progress)
+      }[event.stage] || "Working…", event.progress),
+      onPreview: text => {
+        previewText.textContent = text;
+        preview.hidden = false;
+        previewText.scrollTop = previewText.scrollHeight;
+      }
     });
     if (controller.signal.aborted) return;
     if (!result.text.trim()) throw new Error("Whisper didn’t find any speech in this audio.");
@@ -357,6 +365,8 @@ async function startTranscription(title, loadAudio, { sourceTitle = "Audio file"
   } finally {
     running = null;
     $("task").hidden = true;
+    preview.hidden = true;
+    previewText.textContent = "";
     $("transcribe-file").disabled = false;
   }
 }

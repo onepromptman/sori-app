@@ -70,10 +70,17 @@ async function transcribe(transcriber, samples, language) {
     const stride = CHUNK_SECONDS - 2 * STRIDE_SECONDS;
     const chunkCount = 1 + Math.max(0, Math.ceil((duration - CHUNK_SECONDS) / stride));
     let complete = 0;
+    let preview = "";
     const streamer = new runtime.WhisperTextStreamer(transcriber.tokenizer, {
       skip_prompt: true,
-      callback_function() {},
+      callback_function(text) {
+        if (!text) return;
+        preview += text;
+        self.postMessage({ type: "preview", value: preview.trimStart() });
+      },
       on_finalize() {
+        // Overlapping chunks may repeat words. Preview only the latest chunk.
+        preview = "";
         complete = Math.min(complete + 1, chunkCount);
         report("transcribing", (start + batch.length * (complete / chunkCount)) / samples.length);
       },

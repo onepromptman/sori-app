@@ -33,7 +33,7 @@
         </form>
         <details class="source-help">
           <summary>Source options</summary>
-          <p class="small">For other sites, share a playing tab with audio in desktop Chrome.</p>
+          <p class="small">In desktop Chrome, share a tab with its audio on, then play the part you want. Return here and choose <strong>Finish and transcribe</strong>.</p>
           <button type="button" id="record-tab">Record tab audio</button>
           <label for="feed-file">Import a saved RSS or Atom file</label>
           <input id="feed-file" type="file" accept=".rss,.atom,.xml,application/rss+xml,application/atom+xml,application/xml,text/xml">
@@ -59,9 +59,13 @@
         </div>
         <div id="task" class="status" hidden>
           <p id="task-text" role="status"></p>
-          <progress id="task-progress" max="1" aria-label="Transcription progress"></progress>
+          <progress id="task-progress" max="1" aria-label="Transcription progress" hidden></progress>
           <button id="finish-recording" class="primary" type="button" hidden>Finish and transcribe</button>
           <button id="cancel" type="button">Cancel</button>
+          <div id="task-preview" hidden>
+            <h3 class="eyebrow">Live transcript preview</h3>
+            <pre id="task-preview-text"></pre>
+          </div>
         </div>
         <p id="notice" role="status" aria-live="polite" hidden></p>
         <label for="search" class="visually-hidden">Find a transcript or training file</label>
@@ -119,13 +123,17 @@
   </main>
   <footer>Saved in this browser. Download anything you want to keep outside it.</footer>
   <dialog id="youtube-import" aria-labelledby="youtube-import-heading">
-    <h2 id="youtube-import-heading">Add a YouTube transcript</h2>
-    <p class="small"><span id="youtube-video-link"></span> and select <strong>Show transcript</strong> in the video description. Copy the transcript and paste it here.</p>
+    <h2 id="youtube-import-heading" tabindex="-1" autofocus>Add a YouTube transcript</h2>
+    <ol class="youtube-steps small">
+      <li><span id="youtube-video-link"></span> and expand the video description. You can leave the video paused.</li>
+      <li>Click <strong>Show transcript</strong> and copy the text. If you don’t see it, choose an audio option below.</li>
+      <li>Paste it below and click <strong>Save transcript</strong>.</li>
+    </ol>
     <form id="youtube-transcript-form">
       <label for="youtube-title">Video title (optional)</label>
       <input id="youtube-title" type="text" maxlength="180">
       <label for="youtube-transcript">Transcript</label>
-      <textarea id="youtube-transcript" rows="6" required autofocus></textarea>
+      <textarea id="youtube-transcript" rows="6" required></textarea>
       <div class="actions">
         <button type="submit" class="primary">Save transcript</button>
         <button type="button" id="close-youtube-import">Close</button>
@@ -134,11 +142,17 @@
     </form>
     <details id="youtube-record-options" class="source-help">
       <summary>Record the video’s audio</summary>
-      <p class="small">In desktop Chrome, open the video in another tab. Choose that tab with <strong>Also share tab audio</strong> turned on. Play the part you want, then return to Sori and select <strong>Finish and transcribe</strong>.</p>
+      <ol class="youtube-steps small">
+        <li>Open Sori and the video in separate tabs in desktop Chrome. Pause the video.</li>
+        <li>Click <strong>Share YouTube tab</strong> below. Select the video tab, turn on <strong>Also share tab audio</strong>, and click <strong>Share</strong>.</li>
+        <li>Press <strong>Play</strong> on YouTube. Play only the part you want to transcribe.</li>
+        <li>Return to Sori and click <strong>Finish and transcribe</strong>. The text will appear as Whisper processes it.</li>
+      </ol>
       <button type="button" id="record-youtube">Share YouTube tab</button>
     </details>
     <details id="feed-search-options" class="source-help">
       <summary>Find a podcast feed</summary>
+      <p class="small">Search for the show by name and add the matching feed. Then choose an episode under Sources and click <strong>Transcribe</strong>.</p>
       <form id="feed-search-form">
         <label for="feed-query">Show name</label>
         <div class="input-row">

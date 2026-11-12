@@ -213,6 +213,8 @@ input::file-selector-button {
 .status, #notice, #import-status { margin-block: .6rem; padding: .5rem .65rem; background: var(--tint); }
 .status p { margin: 0; flex: 1 0 10rem; }
 progress { width: min(11rem, 100%); accent-color: var(--cobalt); }
+#task-preview { flex: 1 0 100%; min-width: 0; border-top: 1px solid var(--soft-line); padding-top: .55rem; }
+#task-preview-text { font: inherit; margin: .35rem 0 0; max-height: 10rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
 .error { color: #a31c27; }
 .entry { padding: .58rem 0; border-bottom: 1px solid var(--soft-line); overflow-wrap: anywhere; }
 .entry p { margin: .2rem 0; }
@@ -254,6 +256,8 @@ dialog { max-width: min(28rem, 92vw); border: 1px solid var(--line); padding: 1.
 dialog::backdrop { background: #14171c60; }
 #youtube-import { width: min(34rem, 92vw); max-width: 92vw; }
 #youtube-import p { margin-block: .5rem; }
+.youtube-steps { margin-block: .55rem; padding-inline-start: 1.4rem; }
+.youtube-steps li + li { margin-top: .25rem; }
 #youtube-title, #youtube-transcript {
   display: block;
   width: 100%;

@@ -23,9 +23,11 @@ fictional transcript and a short lesson you can try right away.
 ## Add your own material
 
 - **YouTube.** Paste a video link in **Sources** and click **Add**. Open the
-  video, choose **Show transcript** in its description, and paste the text
-  into Sori. If captions are missing or inaccurate, use **Record the video's
-  audio** in desktop Chrome or **Find a podcast feed** to search by show name.
+  video and choose **Show transcript** in its description. You can leave the
+  video paused. Paste the text into Sori and click **Save transcript**. If
+  captions are missing or inaccurate, choose **Record the video's audio**
+  for guided steps in desktop Chrome, or **Find a podcast feed** to search by
+  show name.
 - **Podcasts and files.** Paste a podcast RSS link in **Sources** and choose an
   episode, or pick an audio or video file. Click **Transcribe**. Stay online
   the first time so Whisper can download.

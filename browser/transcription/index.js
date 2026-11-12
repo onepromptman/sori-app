@@ -50,7 +50,7 @@ async function decodeAudio(blob, signal) {
   return samples;
 }
 
-function runWorker(samples, { signal, onProgress, language }) {
+function runWorker(samples, { signal, onProgress, onPreview, language }) {
   if (!globalThis.Worker || !globalThis.WebAssembly) {
     throw new Error("This browser cannot run local speech recognition.");
   }
@@ -78,6 +78,8 @@ function runWorker(samples, { signal, onProgress, language }) {
     function receive({ data }) {
       if (data.type === "progress") {
         onProgress?.(data.value);
+      } else if (data.type === "preview") {
+        onPreview?.(data.value);
       } else if (data.type === "error") {
         discard();
         reject(new Error(data.message));
@@ -104,7 +106,7 @@ function runWorker(samples, { signal, onProgress, language }) {
 }
 
 /** Transcribe a browser-readable audio file on this device using local Whisper. */
-export async function transcribeAudio(blob, { signal, onProgress, language } = {}) {
+export async function transcribeAudio(blob, { signal, onProgress, onPreview, language } = {}) {
   if (!(blob instanceof Blob) || !blob.size) throw new Error("Choose an audio file to transcribe.");
   if (blob.size > MAX_FILE_BYTES) {
     throw new Error("This file is over 150 MB. Split it into smaller files and try again.");
@@ -115,7 +117,7 @@ export async function transcribeAudio(blob, { signal, onProgress, language } = {
   try {
     onProgress?.({ stage: "decoding" });
     const samples = await decodeAudio(blob, signal);
-    return await runWorker(samples, { signal, onProgress, language });
+    return await runWorker(samples, { signal, onProgress, onPreview, language });
   } finally {
     busy = false;
   }

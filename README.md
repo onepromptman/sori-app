@@ -22,23 +22,47 @@ fictional transcript and a short lesson you can try right away.
 
 ## Add your own material
 
-- **YouTube.** Paste a video link in **Sources** and click **Add**. Open the
-  video and choose **Show transcript** in its description. You can leave the
-  video paused. Paste the text into Sori and click **Save transcript**. If
-  captions are missing or inaccurate, choose **Record the video's audio**
-  for guided steps in desktop Chrome, or **Find a podcast feed** to search by
-  show name.
-- **Podcasts and files.** Paste a podcast RSS link in **Sources** and choose an
-  episode, or pick an audio or video file. Click **Transcribe**. Stay online
-  the first time so Whisper can download.
-  Some publishers block direct audio downloads. In that case, click **Open
-  audio** and import a copy you can access.
-- **Other websites.** In desktop Chrome, open **Source options** and choose
-  **Record tab audio**. Share the tab with its audio on, play the part you
-  want, then return to Sori and click **Finish and transcribe**.
-- **Make slides.** Open a transcript and choose **Make slides in ChatGPT or
-  Claude**. Paste the request into your chat, then bring the finished
-  PowerPoint or study guide back to the same transcript in Sori.
+### Copy YouTube captions
+
+Paste a video link in **Sources** and click **Add**. Open the video, expand
+its description, and choose **Show transcript**. You can leave the video
+paused. Copy the text, paste it into Sori, and click **Save transcript**.
+
+![Sori's YouTube import dialog with the steps for copying captions and saving the transcript](docs/youtube-captions.svg)
+
+### Record audio from YouTube or another tab
+
+Open Sori and the video in separate tabs in **desktop Chrome**. If captions
+are missing or inaccurate, expand **Record the video's audio** in Sori.
+Select **Share YouTube tab**, choose the video tab, and turn on **Also share
+tab audio**. Play only the part you want, return to Sori, and click **Finish
+and transcribe**. You'll see a text preview as Whisper works.
+
+For another website, use **Source options > Record tab audio**.
+
+![Sori's tab recording instructions showing when to share, play, and finish](docs/tab-audio.svg)
+
+### Transcribe a podcast episode
+
+Paste a podcast RSS link in **Sources**, or open **Find a podcast feed**
+from the YouTube dialog and search by show name. Add the matching feed,
+pick an episode, and click **Transcribe**. If the publisher blocks the
+audio request, use **Open audio** to get a copy you can import.
+
+![The podcast search in Sori showing The AI Daily Brief and its Add feed button](docs/podcast-search.svg)
+
+### Transcribe a file
+
+Choose an audio or video file and click **Transcribe**. Stay online the
+first time you transcribe audio so Whisper can download.
+
+![Sori's file picker with a sample WAV selected and the Transcribe button ready](docs/audio-file.svg)
+
+## Make slides
+
+Open a transcript and choose **Make slides in ChatGPT or Claude**. Paste
+the request into your chat, then bring the finished PowerPoint or study
+guide back to the same transcript in Sori.
 
 ```mermaid
 flowchart LR
